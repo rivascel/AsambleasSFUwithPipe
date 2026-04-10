@@ -4,13 +4,14 @@ import { getPeerConnection, createPeerConnection } from "./peer-manager";
 import { sendSignal } from "../supabase-client";
 
 const makingOffer = new Set(); // Para evitar colisiones
-let pc;
+
 export async function createAndSendOffer({roomId,fromPeer,toPeer,localStream }) {
   if (!roomId || !fromPeer || !toPeer) {
     console.log("Faltan parámetros para crear oferta:", { roomId, fromPeer, toPeer });
     throw new Error("roomId, fromPeer y toPeer son requeridos");
 
   }
+  let pc;
   try {
     pc = getPeerConnection(toPeer);
     if (!pc || pc.connectionState === "closed" || pc.signalingState === "closed") {

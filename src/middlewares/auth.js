@@ -1,16 +1,18 @@
 // middlewares/auth.js
-const jwt = require('jsonwebtoken');
-const config = require('../config/config'); // Ajusta la ruta a tu config
+// const jwt = require('jsonwebtoken');
+import jwt from "jsonwebtoken";
+// const config = require('../config/config'); // Ajusta la ruta a tu config
+import { config } from "../config/config.js"; // Ajusta la ruta a tu config
 
-function requireAuth(req, res, next) {
+export default function requireAuth(req, res, next) {
     // 1. Extraer el token de las cookies
     // LOGS DE EMERGENCIA (Aparecerán antes de cualquier lógica)
-    console.log("---------------- AUTH CHECK ----------------");
-    console.log("🕒 Hora:", new Date().toISOString());
-    console.log("🔗 Path:", req.path);
-    console.log("🍪 Cookies crudas (Header):", req.headers.cookie || "SIN COOKIES EN HEADER");
-    console.log("📦 req.cookies (Parser):", req.cookies ? JSON.stringify(req.cookies) : "COOKIE-PARSER NO FUNCIONA");
-    console.log("--------------------------------------------");
+    // console.log("---------------- AUTH CHECK ----------------");
+    // console.log("🕒 Hora:", new Date().toISOString());
+    // console.log("🔗 Path:", req.path);
+    // console.log("🍪 Cookies crudas (Header):", req.headers.cookie || "SIN COOKIES EN HEADER");
+    // console.log("📦 req.cookies (Parser):", req.cookies ? JSON.stringify(req.cookies) : "COOKIE-PARSER NO FUNCIONA");
+    // console.log("--------------------------------------------");
 
     // Permite scripts de dominios externos necesarios para Excalidraw
     res.setHeader(
@@ -88,4 +90,4 @@ function requireAuth(req, res, next) {
         }
 }
 
-module.exports = { requireAuth };
+// module.exports = { requireAuth };

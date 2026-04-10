@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "programa para conexion en linea de propietarios en las asambleas",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "backend:install": "npm install",
     "build": "npm install",

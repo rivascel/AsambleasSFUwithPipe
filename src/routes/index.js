@@ -1,28 +1,44 @@
-const express=require("express");
+import express from "express";
+// const router = express.Router();
 const router = express.Router();
-const path = require("path");
-const fs = require("fs");
-const jwt = require('jsonwebtoken');
-const  sendMagicLink  = require("../utils/sendMagicLink");
-const { createRoom, requestToJoinRoom }= require("../utils/js/webrtc/supabase");
-const { getPendingRequest }= require("../utils/js/webrtc/supabase");
-const { approveUser }= require("../utils/js/webrtc/supabase");
-const { ApprovedUserQuery }= require("../utils/js/webrtc/supabase");
-const { deleteCandidate }= require("../utils/js/webrtc/supabase");
-const { getPendingRequestById }= require("../utils/js/webrtc/supabase");
-const { getApprovedUserById }= require("../utils/js/webrtc/supabase");
-const { offers }= require("../utils/js/webrtc/supabase");
-const { addViewerToBroadcast }= require("../utils/js/webrtc/supabase");
+export default router;
+
+// const path = require("path");
+import path from "path";
+// const fs = require("fs");
+import fs from "fs";
+// const jwt = require('jsonwebtoken');
+import jwt from "jsonwebtoken";
+// const { addViewerToBroadcast }= require("../utils/js/webrtc/supabase");
+
+import  sendMagicLink  from "../utils/sendMagicLink.js";
+import createRoom from "../utils/js/webrtc/supabase.js";
+import requestToJoinRoom from "../utils/js/webrtc/supabase.js";
+import getPendingRequest from "../utils/js/webrtc/supabase.js";
+import approveUser from "../utils/js/webrtc/supabase.js";
+import ApprovedUserQuery from "../utils/js/webrtc/supabase.js";
+import deleteCandidate from "../utils/js/webrtc/supabase.js";
+import getPendingRequestById from "../utils/js/webrtc/supabase.js";
+import getApprovedUserById from "../utils/js/webrtc/supabase.js";
+import offers from "../utils/js/webrtc/supabase.js";
 
 // const { getPeerConnection, getRemoteStream, closeConnection }= require("../utils/js/webrtc/webrtc-no");
 
 
 //Traemos el config para el jwtSecret
-const { config } = require('../config/config');
+// const { config } = require('../config/config');
+import { config } from "../config/config.js";
 
-const isLoggedIn = require("../middlewares/IsLoggedIn");
+// const isLoggedIn = require("../middlewares/IsLoggedIn");
 
-const { requireAuth } = require('../middlewares/auth');
+// const { requireAuth } = require('../middlewares/auth');
+import requireAuth from "../middlewares/auth.js";
+
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 router.post("/logout", (req, res) => {
   res.clearCookie("username");
@@ -442,4 +458,4 @@ router.get('/webrtc-config', (req, res) => {
   });
 });
 
-module.exports = router;
+// module.exports = router;

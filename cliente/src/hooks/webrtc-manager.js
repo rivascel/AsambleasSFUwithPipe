@@ -9,226 +9,272 @@ import { getPeerConnection, createPeerConnection, closePeerConnection } from "./
 
 import { createAndSendOffer } from "./offerManager";
 
-let peerConnections = {};
-let localStream=null;
-let candidateQueue = [];
-let remoteStream;
+let device;
+    let consumerTransport;  // Para recibir streams
+    let producerTransport;  // Para enviar streams (NUEVO)
+    let localStream = null; // Stream local del viewer
+    let isProducing = false;
 
+// Obtener stream local (cámara/micrófono)
 
+export async function getLocalStream(localVideoElement){
+  try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true
+      });
+      
+      localVideoElement.srcObject = stream;
+      
+      // Opcional: mostrar preview local
+      if (localVideoElement?.current) {
+        localVideoElement.current.srcObject = stream;
+      }
+      
+      return stream;
+    } catch (error) {
+      console.error("❌ Error accediendo a medios:", error);
+      return null;
+    }
 
-export async function startBroadcasting(roomId, adminId, localVideoElement) {
+}
+
+  // Función para iniciar transmisión (enviar video/audio)
+// Es mejor usar variables locales o referencias que no contaminen el objeto window
+let videoProducer = null;
+let audioProducer = null;
+
+export async function startProducing(videoTrack, audioTrack,producerTransportRef) {  
+  // 1. Validar que el transporte de envío (SendTransport) exista
+  if (!producerTransportRef.current) {
+    console.error("❌ producerTransport no inicializado. ¿Se llamó a createSendTransport primero?");
+    return;
+  }
 
   try {
-    // await setAdminIsStreaming(roomId, adminId);
-    setUserIsStreaming(adminId)
-    await startLocalStream(roomId, adminId, localVideoElement /*, pc*/);
+    // 2. Producir Video con Simulcast (Configuración válida)
+    if (videoTrack) {
+      videoProducer = await producerTransportRef.current.produce({
+        track: videoTrack,
+        encodings: [
+          { maxBitrate: 100000 }, // Calidad baja
+          { maxBitrate: 300000 }, // Calidad media
+          { maxBitrate: 900000 }  // Calidad alta
+        ],
+        codecOptions: {
+          videoGoogleStartBitrate: 1000
+        }
+      });
+      
+      console.log("🎥 Video producer creado:", videoProducer.id);
 
+      // Manejar cierre del producer
+      videoProducer.on('trackended', () => {
+        console.log('Track de video finalizado');
+      });
+    }
+
+    // 3. Producir Audio
+    if (audioTrack) {
+      audioProducer = await producerTransportRef.current.produce({
+        track: audioTrack,
+        encodings: [
+          { maxBitrate: 32000 } 
+        ]
+      });
+      
+      console.log("🎤 Audio producer creado:", audioProducer.id);
+    }
+
+    // 4. Actualizar estados
+    isProducingRef.current = true;
+    setViewerReady(true);
     
+    return { videoProducer, audioProducer };
+
   } catch (error) {
-    console.error("Failed to start broadcast:", error);
+    console.error("❌ Error produciendo en Mediasoup:", error);
+    throw error;
   }
 }
 
-export function getLocalStream() {
-  return localStream;
-}
+  // export async function startProducing(videoTrack, audioTrack) {  
+  //   if (!producerTransport) {
+  //       console.error("❌ producerTransport no inicializado");
+  //       return;
+  //     }
+
+  //     try {
+  //       // Producir video
+  //       if (videoTrack) {
+  //         const videoProducer = await producerTransport.produce({
+  //           track: videoTrack,
+  //           encodings: [
+  //             { maxBitrate: 100000 }, // 100kbps
+  //             { maxBitrate: 300000 }, // 300kbps
+  //             { maxBitrate: 900000 }  // 900kbps
+  //           ],
+  //           codecOptions: {
+  //             videoGoogleStartBitrate: 1000
+  //           }
+  //         });
+          
+  //         console.log("🎥 Video producer creado:", videoProducer.id);
+          
+  //         // Guardar producer
+  //         if (!window.videoProducers) window.videoProducers = [];
+  //         window.videoProducers.push(videoProducer);
+  //       }
+
+  //       // Producir audio
+  //       if (audioTrack) {
+  //         const audioProducer = await producerTransport.produce({
+  //           track: audioTrack,
+  //           encodings: [
+  //             { maxBitrate: 32000 } // 32kbps para audio
+  //           ]
+  //         });
+          
+  //         console.log("🎤 Audio producer creado:", audioProducer.id);
+          
+  //         if (!window.audioProducers) window.audioProducers = [];
+  //         window.audioProducers.push(audioProducer);
+  //       }
+
+  //       isProducing = true;
+  //       setViewerReady(true);
+        
+  //     } catch (error) {
+  //       console.error("❌ Error produciendo:", error);
+  //     }
   
-export async function startLocalStream(roomId, adminId, localVideoElement) {
-  try {
-    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-    localVideoElement.srcObject = localStream;
+  // }
+
+    // Función para detener transmisión
+
+  export async function stopProducing() {
+    // Cerrar producers de video
+    if (window.videoProducers) {
+      for (const producer of window.videoProducers) {
+        producer.close();
+      }
+      window.videoProducers = [];
+    }
     
-    //Si hay usuarios conectados, crear ofertas para ellos
-    await createOfferToViewer(roomId, adminId, localStream);
-   
-    return localStream;
+    // Cerrar producers de audio
+    if (window.audioProducers) {
+      for (const producer of window.audioProducers) {
+        producer.close();
+      }
+      window.audioProducers = [];
+    }
+    
+    // Detener tracks locales
+    if (localStream) {
+      localStream.getTracks().forEach(track => track.stop());
+      localStream = null;
+    }
+    
+    isProducing = false;
+
+  }
+
+
+
+
+// Consumir un producer específico
+export async function consumeProducer(producerId) {
+  try {
+    // Solicitar consumir el producer al servidor
+    const { rtpParameters, kind, producerId: serverProducerId } = await new Promise((resolve) => {
+      socketRef.current.emit("consume", {
+        transportId: consumerTransport.id,
+        producerId: producerId,
+        roomId: roomId
+      }, resolve);
+    });
+
+    // Consumir en el cliente
+    const consumer = await consumerTransport.consume({
+      id: serverProducerId,
+      producerId: producerId,
+      kind: kind,
+      rtpParameters: rtpParameters
+    });
+
+    console.log(`✅ Consumiendo ${kind}:`, consumer.id);
+
+    // Obtener el track del consumer
+    const { track } = consumer;
+
+    // Agregar el track a la UI según el tipo
+    if (kind === 'video') {
+      // Agregar video a la interfaz
+      addVideoToUI(track, producerId);
+      
+      // Opcional: guardar referencia del consumer
+      if (!window.videoConsumers) window.videoConsumers = [];
+      window.videoConsumers.push(consumer);
+      
+    } else if (kind === 'audio') {
+      // Agregar audio a la interfaz
+      addAudioToUI(track, producerId);
+      
+      if (!window.audioConsumers) window.audioConsumers = [];
+      window.audioConsumers.push(consumer);
+    }
+
+    // Escuchar cuando el consumer se cierra
+    consumer.on("transportclose", () => {
+      console.log(`🔴 Consumer ${consumer.id} cerrado`);
+      removeStreamFromUI(producerId);
+    });
+
+    // Reanudar el consumer (empezar a recibir datos)
+    await consumer.resume();
+
+    return consumer;
 
   } catch (error) {
+    console.error(`❌ Error consumiendo producer ${producerId}:`, error);
+    return null;
+  }
+
+};
+
+
+
+
+
+
+
+export async function getAdmin(roomId) {
+  return await getActiveAdmin(roomId);
+};
+
+export async function startLocalStream(roomId, email, localVideoElement) {
+  // setViewerIsStreaming(email);
+  setUserIsStreaming(email)
+  try{
+    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    localVideoElement.srcObject = localStream;
+
+    await createOfferToAdmin(roomId, email, localStream);
+
+    return localStream;
+  } catch(error){
     console.error("Error al obtener el stream local:", error);
     throw error;
   }
-}
+};
 
-export async function stopLocalStream(localVideoElement) {
-  // await deleteAdmin(adminId);
-  localStream = localVideoElement?.srcObject;
+export async function stopLocalStream(videoElement) {
+  localStream = videoElement?.srcObject;
   if (localStream) {
     localStream.getTracks().forEach(track => track.stop());
-    localVideoElement.srcObject = null;
+    videoElement.srcObject = null;
     console.log("stream detenido correctamente")
-    closePeerConnection(peerConnections[0]);  //<======================
   } else {
     console.warn("No hay stream activo en el videoElement");
   }
-};
-
-export async function joinStreamAsAdmin(roomId, adminId, streamTarget) {
-  try {
-    if (!streamTarget) {
-    console.log('Invalid video element provided');
-    return;
-  }
-    await receivingStream(roomId, adminId, streamTarget);
-    
-    
-  } catch (error) {
-    console.error("Viewer failed to join stream:", error);
-  }
-};
-
-// Admin crea y envía oferta a un viewer
-// let pc;
-export async function createOfferToViewer(roomId, adminId, localStream) {
-  if (!roomId)  {
-    throw new Error("roomId es requerido");
-  } 
-  let unsubscribe;
-  let viewerPc;
-  let viewerId;
-      
-  try {
-    const {viewers} = await getAllViewersAndListen(roomId, async (newViewerId)=>{
-      console.log("Nuevo viewer ", newViewerId);
-      viewerId=newViewerId;
-      console.log("viewer encontrado para oferta:", viewerId);
-        // Aquí podrías enviar una nueva oferta al viewer si es necesario
-
-        await createAndSendOffer({
-            roomId:roomId,
-            fromPeer:adminId,
-            toPeer: viewerId,
-            localStream: localStream,
-        });
-    });
-
-     //Viewers ya conectados
-    for (const viewerId of viewers) {
-      console.log("viewer encontrado para oferta:", viewerId);
-
-      await createAndSendOffer({
-        roomId: roomId,
-        fromPeer: adminId,
-        toPeer: viewerId,
-        localStream: localStream
-      });
-    };
-
-    return { 
-      viewers, 
-      unsubscribe: () => supabase.removeChannel(channel), 
-    };
-  } catch (error) {
-    console.error("❌ Error creando ofertas:", error);
-    if (unsubscribe) unsubscribe();
-    throw error;
-  }
-}
-
-const approvedViewers = new Set();
-
-
-export function listenForApprovals(room) {
-  return listenToRequests(
-    room,
-    { componentId: 'VideoGeneral' },
-    (request) => {
-      if (request?.status === 'approved') {
-        approvedViewers.add(request.user_id)
-        // console.log("✅ Viewer aprobado:", request.user_id)
-      }
-    },
-  )
-};
-
-export async function receivingStream(roomId, adminId, streamTarget) {
-  
-  if (approvedViewers !== undefined) {
-    // cleanupViewerConnection(approvedViewers)
-    console.log("Iniciando recepción de stream para viewer aprobado:", approvedViewers);
-
-    const viewerId = [...approvedViewers][0]; // Obtener el primer viewer aprobado 
-
-    try {
-      let pc;
-
-      if (!peerConnections[viewerId]) {
-        pc = createPeerConnection(roomId,adminId, viewerId);
-      console.log("🔌 Viewer PC creada")
-      } else {
-        pc=getPeerConnection(viewerId);
-      };
-  
-      const remoteStream = createRemoteStream();  
-  
-      pc.addTransceiver('video', { direction: 'recvonly' })
-      pc.addTransceiver('audio', { direction: 'recvonly' })
-  
-      pc.onconnectionstatechange = () => {
-        console.log("🔌 PC state:", pc.connectionState)
-        if (pc.connectionState === 'failed' || pc.connectionState === 'closed') {
-          // cleanupViewerConnection()
-        }
-      }
-  
-      pc.ontrack = ({ track }) => {
-        console.log("🎥 Track recibido:", track.kind)
-  
-        if (!remoteStream.getTracks().some(t => t.id === track.id)) {
-          remoteStream.addTrack(track)
-        }
-  
-        track.onended = () => {
-          console.log("⏹️ Track terminó → reset PC")
-          // cleanupViewerConnection()
-        }
-      };
-  
-      return pc
-
-    } catch (error) {
-      console.error(error);
-
-    }
-  } else {
-    console.log("No hay viewer aprobado para iniciar la conexión.");
-    closePeerConnection(approvedViewers);
-  }
-
-  // Variables de estado para reconexión
-    
-  function cleanupViewerConnection(approvedViewers) {
-    const pc = peerConnections[approvedViewers]
-
-    if (pc) {
-      pc.ontrack = null
-      pc.onicecandidate = null
-      pc.onconnectionstatechange = null
-      pc.close()
-      delete peerConnections[approvedViewers]
-      console.log("🧹 Viewer PC destruida")
-    }
-
-    if (streamTarget?.srcObject) {
-      streamTarget.srcObject.getTracks().forEach(t => t.stop())
-      streamTarget.srcObject = null
-      console.log("🧹 Stream remoto detenido y limpiado")
-    }
-
-    console.log("✅ Viewer cleanup completo")
-  }
-  
-  function createRemoteStream() {
-    const stream = new MediaStream()
-    if (streamTarget) {
-      streamTarget.srcObject = stream
-    }
-    return stream
-  }
-  
-  return () => {
-  console.log("🧹 Viewer cleanup manual")
-  
-  // cleanupViewerConnection()
-  }
-};
-
+}  

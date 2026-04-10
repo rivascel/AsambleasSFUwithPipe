@@ -1,7 +1,8 @@
 // supabase.js
 // import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-const { createClient } = require('@supabase/supabase-js');
+// const { createClient } = require('@supabase/supabase-js');
+import { createClient } from "@supabase/supabase-js";
 
 const SUPABASE_URL = 'https://hhmqduncjwddwptghsaj.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhobXFkdW5jandkZHdwdGdoc2FqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE4ODQ0NTIsImV4cCI6MjA1NzQ2MDQ1Mn0.0IC33LEBv1O4QO9ctymNJu7nMjzXqk1P3Un9gf8WYds';
@@ -9,7 +10,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let approved='approved';
 
-async function createRoom(roomId) {
+export async function createRoom(roomId) {
     const { error } = await supabase
         .from('rooms')
         .insert([{ room_id: roomId }]);
@@ -17,7 +18,7 @@ async function createRoom(roomId) {
 }
 
 //El usuario se une a la sala
-async function requestToJoinRoom(roomId, userId) {
+export async function requestToJoinRoom(roomId, userId) {
     const { data, error1 } = await supabase
         .from('requests')
         .select('user_id')
@@ -46,7 +47,7 @@ async function requestToJoinRoom(roomId, userId) {
     // console.log(`Request sent for room: ${roomId}. Waiting for admin approval.`);
   }
   
-async function getPendingRequest(roomId) {
+export async function getPendingRequest(roomId) {
     const { data, error } = await supabase
         .from('requests')
         .select('user_id')
@@ -61,7 +62,7 @@ async function getPendingRequest(roomId) {
     return data;
 }
 
-async function getPendingRequestById(roomId, userId) {
+export async function getPendingRequestById(roomId, userId) {
     const { data: request, error } = await supabase
         .from('requests')
         .select('user_id')
@@ -78,7 +79,7 @@ async function getPendingRequestById(roomId, userId) {
     return currentViewers;
     }
 
-async function getApprovedUserById(roomId, userId) {
+export async function getApprovedUserById(roomId, userId) {
 
     // obtener lista actual de candidatos en sala
     const { data: requestsData, error: roomError } = await supabase
@@ -99,7 +100,7 @@ async function getApprovedUserById(roomId, userId) {
 
 //consulta de usuarios aprobados
 //consulta de usuarios aprobados
-async function ApprovedUserQuery(roomId) {
+export default async function ApprovedUserQuery(roomId) {
     try {
         const { data, error } = await supabase
         .from('requests')
@@ -125,7 +126,7 @@ async function ApprovedUserQuery(roomId) {
     }
 }
 
-async function approveUser(roomId, userId, approved='approved') {
+export async function approveUser(roomId, userId, approved='approved') {
 
    //aprobar el usuario
     const { error } = await supabase
@@ -161,7 +162,7 @@ async function approveUser(roomId, userId, approved='approved') {
 
 
 //Actualizar las ofertas sdp
-async function offers(offer) {
+export async function offers(offer) {
 
    //aprobar el usuario
     const { error } = await supabase
@@ -173,7 +174,7 @@ async function offers(offer) {
 }
 
 //Actualizar las ofertas sdp
-async function offersAnswer(answer) {
+export async function offersAnswer(answer) {
 
    //aprobar el usuario
     const { error } = await supabase
@@ -184,7 +185,7 @@ async function offersAnswer(answer) {
     if (error) throw error;
 }
 
-async function deleteCandidate(userId, roomId = 'main-room') {
+export async function deleteCandidate(userId, roomId = 'main-room') {
     try{
         // Primero, obtén los datos actuales
         const { data: dataUser, error: fetchError } = await supabase
@@ -217,17 +218,17 @@ async function deleteCandidate(userId, roomId = 'main-room') {
   }
 }
 
-module.exports = {
-    createRoom,
-    requestToJoinRoom,
-    getPendingRequest,
-    approveUser,
-    deleteCandidate,
-    ApprovedUserQuery,
-    getPendingRequestById,
-    offers,
-    offersAnswer,
-    getApprovedUserById
-};
+// module.exports = {
+//     createRoom,
+//     requestToJoinRoom,
+//     getPendingRequest,
+//     approveUser,
+//     deleteCandidate,
+//     ApprovedUserQuery,
+//     getPendingRequestById,
+//     offers,
+//     offersAnswer,
+//     getApprovedUserById
+// };
   
 

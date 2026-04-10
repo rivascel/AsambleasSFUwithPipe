@@ -1,5 +1,8 @@
-const { Resend } = require('resend');
-const { config } = require('../config/config');
+// const { Resend } = require('resend');
+// const { config } = require('../config/config');
+
+import { Resend } from "resend";
+import  { config }  from "../config/config.js";
 
 if (!config.api_key) {
   console.error('❌ RESEND_API_KEY no está definida');
@@ -9,7 +12,7 @@ if (!config.api_key) {
 
 const resend = new Resend(config.api_key); // Guárdala en .env
 
-async function sendMagicLink(to, role, token) {
+export default async function sendMagicLink(to, role, token) {
   const magicLink = `${config.BackEndBaseUrl}/api/magic-link?token=${token}`;
 
   try {
@@ -34,4 +37,4 @@ async function sendMagicLink(to, role, token) {
   }
 }
 
-module.exports = sendMagicLink;
+// module.exports = sendMagicLink;

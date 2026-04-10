@@ -3,14 +3,13 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "scripts": {
+  "type": "module",  "scripts": {
     "install-all": "npm install && cd cliente && npm install",
     "build": "cd cliente && npm install && npm run build",
     "dev": "concurrently \"node src/index.js\" \"cd cliente && npm run dev\"",
     "start": "node src/index.js",
     "render-postinstall": "npm install && npm run build"
   },
-  
   "dependencies": {
     "@supabase/supabase-js": "^2.49.1",
     "@tailwindcss/vite": "^4.1.6",
@@ -97,6 +96,8 @@
     "lodash.once": "^4.1.1",
     "math-intrinsics": "^1.1.0",
     "media-typer": "^0.3.0",
+    "mediasoup": "^3.19.19",
+    "mediasoup-client": "^3.18.7",
     "merge-descriptors": "^1.0.1",
     "methods": "^1.1.2",
     "mime": "^1.6.0",

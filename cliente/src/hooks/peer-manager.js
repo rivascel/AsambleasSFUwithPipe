@@ -26,23 +26,23 @@ export const createPeerConnection = (roomId, currentUser, peerId) => {
   peerId
 });
 
-  pc.onicecandidate = async (event) => {
-    if (!event.candidate) return;
+  // pc.onicecandidate = async (event) => {
+  //   if (!event.candidate) return;
 
-    await sendSignal({
-      room_id: roomId,
-      from_user: currentUser,
-      to_user: peerId,
-      type: "ice-candidate",
-      payload: {
-        candidate: event.candidate.candidate,
-        sdpMid: event.candidate.sdpMid,
-        sdpMLineIndex: event.candidate.sdpMLineIndex
-      }
-    });
+  //   await sendSignal({
+  //     room_id: roomId,
+  //     from_user: currentUser,
+  //     to_user: peerId,
+  //     type: "ice-candidate",
+  //     payload: {
+  //       candidate: event.candidate.candidate,
+  //       sdpMid: event.candidate.sdpMid,
+  //       sdpMLineIndex: event.candidate.sdpMLineIndex
+  //     }
+  //   });
 
-    console.log("❄️ ICE enviado a", peerId);
-  };
+  //   console.log("❄️ ICE enviado a", peerId);
+  // };
 
   // Almacenar la conexión
   peerConnections[peerId] = pc;
@@ -75,33 +75,37 @@ export const closeAllPeerConnections = () => {
 };
 
 
-export function queueCandidate(peerId, candidate) {
+// export function queueCandidate(peerId, candidate) {
 
-  if (!iceCandidateQueue[peerId]) {
-    iceCandidateQueue[peerId] = [];
-  }
+//   if (!iceCandidateQueue[peerId]) {
+//     iceCandidateQueue[peerId] = [];
+//   }
 
-  iceCandidateQueue[peerId].push(candidate);
+//   iceCandidateQueue[peerId].push(candidate);
 
-  console.log("📥 ICE en cola para", peerId);
-};
+//   console.log("📥 ICE en cola para", peerId);
+// };
 
-export async function flushCandidateQueue(peerId) {
+// export async function flushCandidateQueue(peerId) {
 
-  const pc = peerConnections[peerId];
-  const queue = iceCandidateQueue[peerId];
+//   const pc = peerConnections[peerId];
+//   const queue = iceCandidateQueue[peerId];
 
-  if (!pc || !queue) return;
+//   if (!pc || !queue) return;
 
-  console.log("🚀 Procesando cola ICE de", peerId);
+//   console.log("🚀 Procesando cola ICE de", peerId);
 
-  for (const candidate of queue) {
-    try {
-      await pc.addIceCandidate(new RTCIceCandidate(candidate));
-      console.log("Candidato adherido")
-    } catch (err) {
-      console.warn("Error agregando ICE:", err);
-    }
-  }
-  iceCandidateQueue[peerId] = [];
-}
+//   // Solo procesar si el estado permite agregar candidatos
+//   // if (pc.remoteDescription && pc.remoteDescription.type) {
+//     for (const candidate of queue) {
+//       try {
+//         await pc.addIceCandidate(new RTCIceCandidate(candidate));
+//         console.log("Candidato adherido")
+//       } catch (err) {
+//         console.warn("Error agregando ICE:", err);
+//       }
+//     }  
+//     delete iceCandidateQueue[peerId]; // Limpiar la cola después de procesar
+//   // }
+//   iceCandidateQueue[peerId] = [];
+// }

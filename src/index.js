@@ -1,19 +1,27 @@
 // process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
-require('dotenv').config(); // ruta relativa al root del proyecto
-const { config } = require('dotenv');
+// require('dotenv').config(); // ruta relativa al root del proyecto
+// import dotenv from 'dotenv';
+// dotenv.config();
 
-const express = require("express");
-// const fs = require("fs");
-const realTimeServer = require("./realTimeServer");
-// const path = require("path");
-const cookieParser = require("cookie-parser");
-// const bodyParser = require('body-parser');
-// const https = require("https");
-const http = require("http");
+import 'dotenv/config';
+
+// const { config } = require('dotenv');
+
+// const express = require("express");
+import express from "express";
+import realTimeServer from "./realTimeServer.js";
+import cookieParser from "cookie-parser";
+import http from "http";
 const app = express();
-const cors = require('cors');
-const path = require("path");
+import cors from "cors";
+import path from "path";
+import authRoutes from './routes/index.js'; // o './routes/auth'
+
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);  
 
 // app.use(cors({
 //   origin: ['https://localhost:5173','https://localhost:3000'],
@@ -70,21 +78,21 @@ app.get('/health', (req, res) => {
   res.send('OK');
 });
 
-const authRoutes = require('./routes'); // o './routes/auth'
 
 app.use('/api', authRoutes);
 
 if (process.env.NODE_ENV === 'production') {
     // Esta es la forma más segura de apuntar a la raíz del proyecto en Render
+  // 
   const publicPath = path.resolve(__dirname, '..', 'cliente', 'dist');
-
+  
   // Servir archivos estáticos
   app.use(express.static(publicPath));
 
   // Ruta comodín para React
   app.get('*', (req, res) => {
       res.sendFile(path.join(publicPath, 'index.html'));
-});
+  });
 
 };
 
