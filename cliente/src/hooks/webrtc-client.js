@@ -9,10 +9,6 @@ import {
 } from "../../src/supabase-client";
 
 
-import { getPeerConnection, createPeerConnection, closePeerConnection } from "./peer-manager.js";
-
-import { createAndSendOffer } from "./offerManager";
-
 const API_URL = import.meta.env.VITE_API_URL;
 
 
@@ -193,66 +189,7 @@ export async function startProducing(videoTrack, audioTrack,producerTransportRef
 
   }
 
-  // Consumir un producer específico
-  export async function consumeProducer(producerId) {
-    try {
-      // Solicitar consumir el producer al servidor
-      const { rtpParameters, kind, producerId: serverProducerId } = await new Promise((resolve) => {
-        socketRef.current.emit("consume", {
-          transportId: consumerTransport.id,
-          producerId: producerId,
-          roomId: roomId
-        }, resolve);
-      });
-
-      // Consumir en el cliente
-      const consumer = await consumerTransport.consume({
-        id: serverProducerId,
-        producerId: producerId,
-        kind: kind,
-        rtpParameters: rtpParameters
-      });
-
-      console.log(`✅ Consumiendo ${kind}:`, consumer.id);
-
-      // Obtener el track del consumer
-      const { track } = consumer;
-
-      // Agregar el track a la UI según el tipo
-      if (kind === 'video') {
-        // Agregar video a la interfaz
-        addVideoToUI(track, producerId);
-        
-        // Opcional: guardar referencia del consumer
-        if (!window.videoConsumers) window.videoConsumers = [];
-        window.videoConsumers.push(consumer);
-        
-      } else if (kind === 'audio') {
-        // Agregar audio a la interfaz
-        addAudioToUI(track, producerId);
-        
-        if (!window.audioConsumers) window.audioConsumers = [];
-        window.audioConsumers.push(consumer);
-      }
-
-      // Escuchar cuando el consumer se cierra
-      consumer.on("transportclose", () => {
-        console.log(`🔴 Consumer ${consumer.id} cerrado`);
-        removeStreamFromUI(producerId);
-      });
-
-      // Reanudar el consumer (empezar a recibir datos)
-      await consumer.resume();
-
-      return consumer;
-
-    } catch (error) {
-      console.error(`❌ Error consumiendo producer ${producerId}:`, error);
-      return null;
-    }
-
-  };
-
+  
 
 export async function getAdmin(roomId) {
   return await getActiveAdmin(roomId);

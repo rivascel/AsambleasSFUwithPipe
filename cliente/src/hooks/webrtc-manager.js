@@ -98,6 +98,20 @@ export async function startProducing(videoTrack, audioTrack,producerTransportRef
   }
 }
 
+export function listenForApprovals(room) {
+  return listenToRequests(
+    room,
+    { componentId: 'VideoGeneral' },
+    (request) => {
+      if (request?.status === 'approved') {
+        approvedViewers.add(request.user_id)
+        // console.log("✅ Viewer aprobado:", request.user_id)
+      }
+    },
+  )
+};
+
+
   // export async function startProducing(videoTrack, audioTrack) {  
   //   if (!producerTransport) {
   //       console.error("❌ producerTransport no inicializado");

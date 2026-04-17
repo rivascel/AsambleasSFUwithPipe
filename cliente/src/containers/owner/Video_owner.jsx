@@ -1,17 +1,15 @@
 import React, { useState, useEffect, useRef, useContext } from "react";
 import { UserContext } from "../../components/UserContext";
 import { io } from "socket.io-client";
-import { startLocalStream, stopLocalStream, getLocalStream, startProducing, 
-        stopProducing, consumeProducer } from '../../hooks/webrtc-client';
-import { registerViewer, listenToRequests, offStreaming } from '../../supabase-client';
+import { startLocalStream, stopLocalStream, getLocalStream, 
+        stopProducing } from '../../hooks/webrtc-client';
+import { listenToRequests, offStreaming } from '../../supabase-client';
 import AppContext from '../../context/AppContext';
 import * as mediasoupClient from "mediasoup-client";
 
 const VideoGeneral = () => {
-// const API_URL = import.meta.env.VITE_API_URL;
   const { apiUrl } = useContext(AppContext);
 
-  const socketRef = useRef(null);
   const localRef = useRef();
   const remoteRef = useRef();
   const roomId = 'main-room';
@@ -20,25 +18,25 @@ const VideoGeneral = () => {
   const [viewerReady, setViewerReady] = useState(false);
   const ownerInfo = JSON.parse(localStorage.getItem("ownerInfo"));
 
+  const socketRef = useRef(null);
+   // 2. Referencias necesarias
   const deviceRef = useRef(null);
-  const producerTransportRef = useRef(null);
-  const consumerTransportRef = useRef(null);
-  const isProducingRef = useRef(false);
+  const sendTransportRef = useRef(null);
+  const recvTransportRef = useRef(null);
 
-  socketRef.current = io(`${apiUrl}`, {
-    withCredentials: true,
-    transports: ["websocket"]
-  });
+  const producersRef = useRef([]);
+  const consumersRef = useRef([]);
 
-  useEffect(() => {
+  const initializedRef = useRef(false); // 🔥 evita doble ejecución (React Strict)
+  const rtpCapabilitiesRef = useRef(null);
+
+ useEffect(() => {
     let unsuscribeChannel;
     // 1️⃣ Validación temprana
     if (!email || !roomId || !ownerInfo?.email) {
       console.warn("Esperando datos para fetch...");
       return;
     }
-    
-    // setViewerReady(checkApprove); // sincroniza con el contexto
     
     const fetchData = async () => {
       try {
@@ -64,38 +62,9 @@ const VideoGeneral = () => {
         if (userById.includes(email)) {
           console.log("Usuario aprobado para enviar stream...");
           if (!viewerReady) setViewerReady(true);
-          
-          console.log("✅ Permiso para transmitir otorgado"); //UNA VEZ QUE ES APROBADO INICIA AUTOMATICAMENTE
-          // Asegurarnos de tener el transport de envío
-          await createSendTransport();
-
-          // Obtener stream local y empezar a producir
-          const stream = await getLocalStream(localRef.current);
-          if (stream) {
-            const videoTrack = stream.getVideoTracks()[0];
-            const audioTrack = stream.getAudioTracks()[0];
-
-            // Llamas a tu función startProducing usando producerTransportRef.current
-            if (producerTransportRef.current) {
-              await startProducing(videoTrack, audioTrack, producerTransportRef.current, isProducingRef);
-              isProducingRef.current = true;
-              console.log("produciendo...")
-            } 
-          }
-          
         } else {
           console.log("Usuario aun no aprobado");
         };
-
-        //Recibe mensaje de que el usuario fue cancelado para transmitir por el admin y bloquea opción para transmitir
-        socketRef.current.on("canceled", async ({ userId, roomId })=>{
-          console.log(`viewer cancelado ${userId} en el cuarto ${roomId} para transmitir`);
-          setViewerReady(false);
-              // Detener producción si estaba activa
-          if (isProducingRef) {
-            await stopProducing();
-          }
-        });
 
       } catch (error) {
         console.error("Error fetching user", error);
@@ -107,388 +76,241 @@ const VideoGeneral = () => {
     }
     
   },[checkApprove, roomId, email, ownerInfo]);
+  
+  //crea los sockets
+  useEffect(() => {
+    socketRef.current = getSocket(apiUrl);
+  }, []);
+
+  // 1. Estado central (useRef + estado lógico)
+  const stateRef = useRef("IDLE");
+
+  const setState = (newState) => {
+    console.log(`🧭 Estado: ${stateRef.current} → ${newState}`);
+    stateRef.current = newState;
+  };
 
 
-useEffect(() => {
-  if (!socketRef.current || !roomId || !email) return;
+  // 3. INIT FLOW (el corazón)
+  const initFlow = async () => {
+    await joinRoom();
+    await loadDevice();
 
-  const init = async () => {
-    try {
-      // 1. Unirse y obtener capacidades
-      const { rtpCapabilities } = await new Promise(resolve => {
-        socketRef.current.emit("join-room", { roomId }, resolve);
-      });
-
-      // 2. Cargar Device (Única vez)
-      const device = new mediasoupClient.Device();
-      await device.load({ routerRtpCapabilities: rtpCapabilities });
-      deviceRef.current = device;
-
-      // 3. Crear Transport de Consumo (RECV)
-      const params = await new Promise(resolve => {
-        socketRef.current.emit("createTransport", { roomId, direction: "recv" }, resolve);
-      });
-
-      const transport = device.createRecvTransport(params);
-      consumerTransportRef.current = transport;
-
-      // Listener para conectar el transport de consumo
-      transport.on("connect", ({ dtlsParameters }, callback, errback) => {
-        socketRef.current.emit("connectTransport", {
-          transportId: transport.id,
-          dtlsParameters
-        }, (res) => (res?.error ? errback() : callback()));
-      });
-
-      // 4. Consumir lo que ya exista
-      await consumeExistingStreams();
-      
-    } catch (error) {
-      console.error("Error en inicialización:", error);
+    if (stream) {
+      await setupProducerFlow();
+    } else {
+      await setupConsumerFlow();
     }
   };
 
-  // --- Listeners de Eventos de Red ---
-  
-  // Nuevo productor en la sala
-  socketRef.current.on("new-producer", async ({ producerId, kind }) => {
-    await consumeProducer(producerId, kind);
-  });
+  // 4. joinRoom
+  const joinRoom = () => {
+    return new Promise((resolve) => {
+      socketRef.current.emit("join-room", { roomId }, (data) => {
+        rtpCapabilitiesRef.current = data.rtpCapabilities;
+        console.log("✅ Unido a la sala", roomId);
+        resolve();
+      });
+      });
+    };
 
-  // Admin cancela transmisión
-  socketRef.current.on("canceled", async () => {
-    setViewerReady(false);
-    if (isProducingRef.current) await stopProducing();
-  });
+    // 5. loadDevice
+    const loadDevice = async () => {
+      const device = new mediasoupClient.Device();
 
-  init();
+      await device.load({
+        routerRtpCapabilities: rtpCapabilitiesRef.current,
+      });
 
-  return () => {
-    if (consumerTransportRef.current) consumerTransportRef.current.close();
-    if (producerTransportRef.current) producerTransportRef.current.close();
-    socketRef.current.off("new-producer");
-    socketRef.current.off("canceled");
-  };
-}, [roomId, email]);
+      deviceRef.current = device;
+    };
 
-//Funcion de soporte del useEffect anterior
-  async function createSendTransport() {
-    if (producerTransportRef.current) return; // Ya existe
-  
-    const params = await new Promise(resolve => {
-      socketRef.current.emit("createTransport", { roomId, direction: "send" }, resolve);
-    });
-    
-    //corresponde a la libreria mediasoup-client
-    const transport = deviceRef.current.createSendTransport(params);
-    producerTransportRef.current = transport;
-  
-    transport.on("connect", ({ dtlsParameters }, callback, errback) => {
-      socketRef.current.emit("connectTransport", { transportId: transport.id, dtlsParameters }, 
-      (res) => (res?.error ? errback() : callback()));
-    });
-  
-    transport.on("produce", async ({ kind, rtpParameters, appData }, callback, errback) => {
-      socketRef.current.emit("produce", { transportId: transport.id, kind, rtpParameters, appData }, 
-      ({ id, error }) => (error ? errback() : callback({ id })));
-    });
-  };
+    // 6. FLUJO ADMIN (PRODUCTOR)
+    const setupProducerFlow = async () => {
+      await createSendTransport();
+      await produce();
 
-  //   // Consumir streams existentes en la sala
-    async function consumeExistingStreams() {
-      if (!consumerTransportRef.current) {
-        console.error("❌ consumerTransport no inicializado");
+      // opcional consumir también
+      await createRecvTransport();
+      listenForNewProducers();
+    };
+
+    // createSendTransport
+    const createSendTransport = () => {
+      return new Promise((resolve) => {
+        socketRef.current.emit(
+          "createTransport",
+          { consumer: false }, // 🔥 CLAVE
+          (params) => {
+            const transport = deviceRef.current.createSendTransport(params);
+
+            transport.on("connect", ({ dtlsParameters }, callback) => {
+              socketRef.current.emit(
+                "connectTransport",
+                { transportId: transport.id, dtlsParameters },
+                callback
+              );
+            });
+
+            transport.on("produce", ({ kind, rtpParameters }, callback) => {
+              socketRef.current.emit(
+                "produce",
+                {
+                  transportId: transport.id,
+                  kind,
+                  rtpParameters,
+                },
+                ({ id }) => callback({ id })
+              );
+            });
+
+            sendTransportRef.current = transport;
+            resolve();
+          }
+        );
+      });
+    };
+
+    // produce (clave)
+    const produce = async () => {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true,
+      });
+
+      for (const track of stream.getTracks()) {
+        const producer = await sendTransportRef.current.produce({ track });
+        producersRef.current.push(producer);
+      }
+
+      console.log("🎥 Produciendo...");
+    };
+
+    // 7. FLUJO VIEWER
+    const setupConsumerFlow = async () => {
+      await createRecvTransport();
+      await consumeExisting();
+      listenForNewProducers();
+    };
+
+    // createRecvTransport
+    const createRecvTransport = () => {
+      return new Promise((resolve) => {
+        socketRef.current.emit(
+          "createTransport",
+          { consumer: true }, // 🔥 CLAVE
+          (params) => {
+            const transport = deviceRef.current.createRecvTransport(params);
+
+            transport.on("connect", ({ dtlsParameters }, callback) => {
+              socketRef.current.emit(
+                "connectTransport",
+                { transportId: transport.id, dtlsParameters },
+                callback
+              );
+            });
+            recvTransportRef.current = transport;
+            resolve();
+          }
+        );
+      });
+    };
+
+    // consumir existentes
+    const consumeExisting = async () => {
+      const producers = await new Promise((resolve) => {
+        socketRef.current.emit("getProducers", resolve);
+      });
+
+      console.log("📡 Producers disponibles:", producers);
+
+      for (const producerId of producers) {
+        await consume(producerId);
+      }
+    };
+
+    // 🎥 consume
+    const consume = async (producerId) => {
+      const data = await new Promise((resolve) => {
+        socketRef.current.emit(
+          "consume",
+          {
+            producerId,
+            rtpCapabilities: deviceRef.current.rtpCapabilities,
+          },
+          resolve
+        );
+      });
+
+      if (!data) {
+        console.warn("❌ Productor no encontrado:", producerId);
         return;
       }
-    
+
+      const consumer = await recvTransportRef.current.consume({
+        id: data.id,
+        producerId: data.producerId,
+        kind: data.kind,
+        rtpParameters: data.rtpParameters,
+      });
+
+      consumersRef.current.push(consumer);
+
+      // 🎥 montar en video
+      const stream = new MediaStream();
+      stream.addTrack(consumer.track);
+
+      // const video = document.createElement("video");
+      // video.srcObject = stream;
+      // video.autoplay = true;
+      // video.playsInline = true;
+
+      // document.body.appendChild(video);
+
+      remoteRef.current.srcObject = stream
+    };
+
+    // 🔴 nuevos producers en tiempo real
+    const listenForNewProducers = () => {
+      socketRef.current.on("new-producer", async ({ producerId }) => {
+        console.log("🆕 Nuevo producer:", producerId);
+        await consume(producerId);
+      });
+    };
+
+    // 8. useEffect correcto (ANTI-CAOS)
+    useEffect(() => {
+      if (initializedRef.current) return;
+      initializedRef.current = true;
+
+      const socket = getSocket(apiUrl);
+      socketRef.current = socket;
+
+      socket.on("connect", async () => {
+        console.log("🟢 Conectado:", socket.id);
+        await initFlow();
+      });
+    }, []);
+
+    const openBroadcasting = async () => {
       try {
-        // Obtener lista de producers existentes en la sala
-        const { producers } = await new Promise((resolve) => {
-          socketRef.current.emit("getProducers", { roomId: roomId }, resolve);
-        });
-    
-        if (!producers || producers.length === 0) {
-          console.log("📭 No hay producers activos en la sala");
-          return;
-        }
-    
-        console.log(`📡 Consumiendo ${producers.length} producers existentes...`);
-    
-        // Consumir cada producer
-        for (const producer of producers) {
-          await consumeProducer(producer.id);
-        }
-    
+        // 1. Obtener stream local
+        setStream(true); //Inicia useEffect para generar proceso de streaming
+
       } catch (error) {
-        console.error("❌ Error consumiendo streams existentes:", error);
-      }
-    
-    }
-
-  
-
-
-  // useEffect(() => {
-    
-  //   let device;
-  //   let consumerTransport;  // Para recibir streams
-  //   let producerTransport;  // Para enviar streams (NUEVO)
-  //   let localStream = null; // Stream local del viewer
-  //   let isProducing = false;
-
-  //   if (!socketRef.current) {
-  //     console.error("❌ socket no inicializado");
-  //     return;
-  //   }
-
-  //   //Recibe mensaje de que el usuario fue cancelado para transmitir por el admin y bloquea opción para transmitir
-  //   socketRef.current.on("canceled", async ({ userId, roomId })=>{
-  //     console.log(`viewer cancelado ${userId} en el cuarto ${roomId} para transmitir`);
-  //     setViewerReady(false);
-  //         // Detener producción si estaba activa
-  //     if (isProducing) {
-  //       await stopProducing();
-  //     }
-  //   });
-
-  //   // Escuchar nuevos producers (otros usuarios transmitiendo)
-  //   socketRef.current.on("new-producer", async ({ producerId, peerId, userId, username, kind }) => {
-  //     try {
-  //       console.log(`🎥 Nuevo producer: ${producerId} de ${peerId}, userId: ${userId}, username: ${username}, tipo: ${kind}`);
-        
-  //       // No consumir nuestro propio producer
-  //       if (peerId === socketRef.current.id) {
-  //         console.log("👤 Es mi propio producer, ignorando");
-  //         return;
-  //       }
-
-  //       // Consumir el nuevo producer
-  //       const consumerParams = await new Promise((resolve) => {
-  //         socketRef.current.emit("consume", {
-  //           roomId: roomId,
-  //           producerId: producerId,
-  //           rtpCapabilities: device.rtpCapabilities,
-  //         }, resolve);
-  //       });
-
-  //       if (!consumerParams || consumerParams.error) {
-  //         console.error("❌ Error en consume:", consumerParams);
-  //         return;
-  //       }
-
-  //       const consumer = await consumerTransport.consume({
-  //         id: consumerParams.id,
-  //         producerId: consumerParams.producerId,
-  //         kind: consumerParams.kind,
-  //         rtpParameters: consumerParams.rtpParameters,
-  //       });
-
-  //       // Agregar track al stream remoto
-  //       const stream = remoteRef.current.srcObject || new MediaStream();
-  //       stream.addTrack(consumer.track);
-  //       remoteRef.current.srcObject = stream;
-
-  //       // Reanudar consumo
-  //       socketRef.current.emit("resume", { consumerId: consumer.id });
-        
-  //       console.log(`✅ Consumiendo ${kind} de ${peerId}`);
-
-  //     } catch (error) {
-  //       console.error("❌ Error consumiendo stream:", error);
-  //     }
-  //   });
-
-  //    // Inicializar como viewer (solo consumir)
-  //   const initAsViewer = async () => {
-  //     try {
-  //       // 1. Unirse a room
-  //     const { rtpCapabilities } = await new Promise(resolve => {
-  //       socketRef.current.emit("joinRoom", { roomId: "main-room" }, resolve);
-  //     });
-
-  //     // 2. Crear device
-  //     device = new mediasoupClient.Device();
-  //     await device.load({ routerRtpCapabilities: rtpCapabilities });
-
-  //     // 3. Crear transport para recibir (CONSUMER)
-  //     const consumerTransportParams = await new Promise(resolve => {
-  //       socketRef.current.emit("createTransport", { roomId: roomId }, resolve);
-  //     });
-
-  //     if (!consumerTransportParams || consumerTransportParams.error) {
-  //       console.error("❌ Error creando consumer transport:", consumerTransportParams);
-  //       return;
-  //     }
-
-  //     consumerTransport = device.createRecvTransport(consumerTransportParams);
-
-  //     // Conectar consumer transport
-  //     consumerTransport.on("connect", ({ dtlsParameters }, callback) => {
-  //       socketRef.current.emit("connectTransport", {
-  //         transportId: consumerTransport.id,
-  //         dtlsParameters
-  //       });
-  //       callback();
-  //     });
-
-  //     console.log("✅ Consumer transport inicializado correctamente");
-
-  //         // Aquí puedes empezar a consumir streams existentes
-  //     await consumeExistingStreams();
-    
-
-  //     } catch (error) {
-  //       console.error("❌ Error inicializando viewer:", error);
-  //     }
-  //   };
-
-        
-
-  //   // Inicializar como broadcaster (enviar y recibir)
-  //   const initAsBroadcaster = async () => {
-  //     try {
-  //       // 1. Unirse a room
-  //       const { rtpCapabilities } = await new Promise(resolve => {
-  //         socketRef.current.emit("joinRoom", { roomId: "main-room" }, resolve);
-  //       });
-
-  //       // 2. Crear device
-  //       device = new mediasoupClient.Device();
-  //       await device.load({ routerRtpCapabilities: rtpCapabilities });
-
-  //       // 3. Crear transport para recibir (CONSUMER)
-  //       const consumerTransportParams = await new Promise(resolve => {
-  //         socketRef.current.emit("createTransport", { roomId: roomId }, resolve);
-  //       });
-
-  //       if (!consumerTransportParams || consumerTransportParams.error) {
-  //         console.error("❌ Error creando consumer transport:", consumerTransportParams);
-  //         return;
-  //       }
-
-  //       consumerTransport = device.createRecvTransport(consumerTransportParams);
-
-  //       consumerTransport.on("connect", ({ dtlsParameters }, callback) => {
-  //         socketRef.current.emit("connectTransport", {
-  //           transportId: consumerTransport.id,
-  //           dtlsParameters
-  //         });
-  //         callback();
-  //       });
-
-  //       // 4. Crear transport para enviar (PRODUCER)
-  //       const producerTransportParams = await new Promise(resolve => {
-  //         socketRef.current.emit("createTransport", { roomId: roomId }, resolve);
-  //       });
-
-  //       if (!producerTransportParams || producerTransportParams.error) {
-  //         console.error("❌ Error creando producer transport:", producerTransportParams);
-  //         return;
-  //       }
-
-  //       producerTransport = device.createSendTransport(producerTransportParams);
-
-  //       // Configurar producer transport
-  //       producerTransport.on("connect", ({ dtlsParameters }, callback, errback) => {
-  //         socketRef.current.emit("connectTransport", {
-  //           transportId: producerTransport.id,
-  //           dtlsParameters
-  //         }, (response) => {
-  //           if (response?.error) {
-  //             errback(new Error(response.error));
-  //           } else {
-  //             callback();
-  //           }
-  //         });
-  //       });
-
-  //       producerTransport.on("produce", async ({ kind, rtpParameters }, callback, errback) => {
-  //         try {
-  //           const { id } = await new Promise((resolve, reject) => {
-  //             socketRef.current.emit("produce", {
-  //               transportId: producerTransport.id,
-  //               kind,
-  //               rtpParameters
-  //             }, (response) => {
-  //               if (response.error) {
-  //                 reject(new Error(response.error));
-  //               } else {
-  //                 resolve(response);
-  //               }
-  //             });
-  //           });
-  //           callback({ id });
-  //         } catch (error) {
-  //           errback(error);
-  //         }
-  //       });
-
-  //       console.log("✅ Transports inicializados correctamente");
-        
-  //       // Aquí puedes empezar a producir tu stream
-  //       await startProducing();
-        
-  //     } catch (error) {
-  //       console.error("❌ Error inicializando broadcaster:", error);
-  //     }
-  //   };
-
-
-
-
-  //   // Inicialización principal
-  //   const init = async () => {
-  //     if (!ownerInfo?.email || !roomId) return;
-
-  //     await registerViewer(roomId, email);
-      
-  //     // Primero inicializar como viewer
-  //     await initAsViewer();
-      
-  //     // Opcional: auto-solicitar permiso para transmitir
-  //     socketRef.current.emit("request-stream", { userId: email, roomId });
-  //   };
-
-  //   // Escuchar cuando el admin permite transmitir
-  //   socketRef.current.on("stream-ready", async () => {
-      
-  //   });
-
-  //   // Iniciar a consumir
-  //   init();
-
-  //   // Cleanup al desmontar
-  //   return () => {
-  //     if (consumerTransport) consumerTransport.close();
-  //     if (producerTransport) producerTransport.close();
-  //     if (localStream) {
-  //       localStream.getTracks().forEach(track => track.stop());
-  //     }
-  //     stopProducing();
-  //   };
-  // }, [roomId, ownerInfo, email]);
-
-
-  const openCall = async () => {
-    try {
-      await startLocalStream(roomId, ownerInfo.email, localRef.current);
-      socketRef.current.emit("user-ready", ownerInfo.email, roomId);
-
-      setIsAllowed(true);
-    } catch (error) {
         console.error("Error al iniciar llamada:", error);
-    }
-    return () => {
-      socketRef.current.disconnect();
-    }
-  }
-
-  const closeCall = () => {
-    stopLocalStream(localRef.current);
-    setIsAllowed(false);
-    offStreaming(email);
-    // if (viewerReady) setViewerReady(false);
-  }
+      }
+    };
+    
+    const hangUpBroadcasting = async () => {
+      try {
+        setStream(false);
+        setIsBroadcasting(false);
+      } catch (error) {
+        console.error("Error al colgar llamada:", error);
+      }
+    };
+    
 
   return (
     <div className="space-y-6">

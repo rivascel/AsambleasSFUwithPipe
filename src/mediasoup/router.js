@@ -1,8 +1,12 @@
 import { config } from "./config.js";
 
 const rooms = new Map();
-
 export async function createRoom(roomId, worker) {
+  
+    // ✅ Verificar que worker existe
+  if (!worker) {
+    throw new Error("Worker no proporcionado para crear la sala");
+  }
   const router = await worker.createRouter({
     mediaCodecs: config.mediasoup.router.mediaCodecs,
   });

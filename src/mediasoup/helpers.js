@@ -6,6 +6,7 @@ export const getPeer = (socketId) => peers.get(socketId);
 export const getAllPeers = () => peers;
 export const addPeer = (socketId, data) => {
     peers.set(socketId, {
+        
         id: socketId,
         transports: [],
         producers: [],

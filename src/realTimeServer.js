@@ -4,7 +4,7 @@
 import { createWorker } from "./mediasoup/worker.js";
 import { createRoom, getRoom } from "./mediasoup/router.js";
 import { createWebRtcTransport } from "./mediasoup/transport.js";
-import { addPeer, getPeer, addTransport, getAllPeers  } from "./mediasoup/helpers.js";
+import { addPeer, getPeer, addTransport, getAllPeers, removePeer  } from "./mediasoup/helpers.js";
 import { Server } from "socket.io";
 
 export default (httpServer) => {
@@ -32,6 +32,7 @@ export default (httpServer) => {
 
     // Configuración de Socket.IO con CORS
     io.on("connection", socket => {
+
         const cookieString = socket.handshake.headers.cookie || ""; 
 
         const getCookie = (name) => {  
@@ -53,33 +54,26 @@ export default (httpServer) => {
             // Usamos el email como identificador en la lista
             userIdentifier = sessionData.email;
 
+              // 🔥 CLAVE: guardar en el socket
+            socket.userId = userIdentifier;
+
+            console.log("🔐 Socket autenticado:", socket.id, userIdentifier);
+
             if (userIdentifier && !connectedUsers.includes(userIdentifier)) {
                 connectedUsers.push(userIdentifier);
                 io.emit("updateConnectedUsers", connectedUsers);
                 console.log("lista de conectados",connectedUsers)
             }
-        } catch (e) {
-            console.error("Error al parsear la cookie session en Socket:", e.message);
-        }
-        console.log("Usuarios conectados actualmente:", connectedUsers);
+            } catch (e) {
+                console.error("Error al parsear la cookie session en Socket:", e.message);
+            }
+            console.log("Usuarios conectados actualmente:", connectedUsers);
 
         }
 
-        // const user = decodeURIComponent(cookie.split("username=").pop()?.split(";")[0]); 
-        // Validar la existencia de la cookie if (!user) return;
-        
         if (!userIdentifier) return;
 
         if (userIdentifier != '') {
-            // if (user ) {
-            //     if (!connectedUsers.includes(user)) {
-            //         connectedUsers.push(user); // Agregar usuario si no está en la lista
-            //     };
-    
-            //     //Enviar la lista actualizada a todos los clientes
-            //     io.emit("updateConnectedUsers", connectedUsers);
-            //     console.log("lista de conectados",connectedUsers)
-            // }
     
             socket.emit("updatedUser", userIdentifier );
 
@@ -232,26 +226,39 @@ export default (httpServer) => {
           // Cuando un usuario se une a una sala
 
         // 🔹 Unirse a la sala
-        socket.on("join-room", async ({ roomId, userId, username }, callback) => {
-            console.log("📥 joinRoom:", socket.id, "sala:", roomId);
+        socket.on("join-room", async ({ roomId, userId }, callback) => {
+             userId = socket.userId; // 🔥 desde backend
+            console.log("📥 joinRoom:", socket.id, "sala:", roomId, "userId", userId);
+
+            console.log("📡 Evento desde:", socket.id);
             
             let room = getRoom(roomId);
             if (!room) {
-                room = await createRoom(roomId); // Asumiendo que createRoom usa el worker internamente
+                room = await createRoom(roomId, worker); // Asumiendo que createRoom usa el worker internamente
                 console.log("🏠 Sala creada:", roomId);
+            }
+
+            // ✅ Verificar que room.producers existe
+            if (!room.producers) {
+                room.producers = [];
             }
             
             // Guardar peer con datos básicos
             addPeer(socket.id, { 
                 roomId, 
                 userId, 
-                username, 
-                transports: [], 
-                producers: [], 
-                consumers: [] 
+                // transports: [], 
+                // producers: [], 
+                // consumers: [] 
             });
             
             socket.join(roomId);
+            socket.roomId = roomId;
+            socket.userId = userId;
+
+            // ✅ Verificar que el peer se guardó correctamente
+            const savedPeer = getPeer(socket.id);
+            console.log("✅ Peer guardado:", socket.id, "en sala:", savedPeer?.roomId);
 
             // Devolver las capacidades del router para que el cliente cargue su device
             callback({
@@ -260,100 +267,212 @@ export default (httpServer) => {
         });
 
         // 🔹 Crear transport (WebRTC)
-        socket.on("createTransport", async ({ roomId, direction }, callback) => {
-            const room = getRoom(roomId);
+        socket.on("createTransport", async ({ consumer }, callback) => {
             const peer = getPeer(socket.id);
-            
-            if (!room || !peer) return callback({ error: "Sala o Peer no encontrado" });
 
-            // Crear el transport en el router del SFU
-            const transport = await createWebRtcTransport(room.router);
+            if (!peer) {
+                console.error("❌ Peer no existe");
+                return callback({ error: "Peer no registrado" });
+            }
 
-            // Guardar transport en la estructura del peer
-            peer.transports.push(transport);
-            
-            // Importante: Guardar si es para producir o consumir
-            transport.appData = { direction };
+            const room = getRoom(peer.roomId);
 
-            callback({
-                id: transport.id,
-                iceParameters: transport.iceParameters,
-                iceCandidates: transport.iceCandidates,
-                dtlsParameters: transport.dtlsParameters,
+            if (!room) {
+                console.error("❌ Sala no existe");
+                return callback({ error: "Sala no existe" });
+            }
+
+            try {
+                const transport = await createWebRtcTransport(room.router);
+
+                // 🔥 CLAVE: distinguir tipo
+                transport.appData = { consumer };
+
+                peer.transports.push(transport);
+
+                console.log(
+                `🚀 Transport creado: ${transport.id} | consumer: ${consumer}`
+                );
+
+                callback({
+                    id: transport.id,
+                    iceParameters: transport.iceParameters,
+                    iceCandidates: transport.iceCandidates,
+                    dtlsParameters: transport.dtlsParameters,
+                });
+            } catch (error) {
+                console.error("❌ Error creando transport:", error);
+                callback({ error: error.message });
+            }
             });
-        });
 
         // 🔹 Conectar transport
         socket.on("connectTransport", async ({ transportId, dtlsParameters }, callback) => {
             const peer = getPeer(socket.id);
-            const transport = peer?.transports.find(t => t.id === transportId);
-            
-            if (!transport) return callback?.({ error: "Transport no encontrado" });
+
+            if (!peer) return callback?.({ error: "Peer no encontrado" });
+
+            const transport = peer.transports.find(t => t.id === transportId);
+
+            if (!transport) {
+                console.error("❌ Transport no encontrado:", transportId);
+                return callback?.({ error: "Transport no encontrado" });
+            }
 
             try {
                 await transport.connect({ dtlsParameters });
                 callback?.({ success: true });
             } catch (error) {
+                console.error("❌ Error en connectTransport:", error);
                 callback?.({ error: error.message });
             }
         });
 
         // 🔹 Producir (Enviar stream al SFU)
-        socket.on("produce", async ({ transportId, kind, rtpParameters, appData }, callback) => {
+        socket.on("produce", async ({ transportId, kind, rtpParameters }, callback) => {
             const peer = getPeer(socket.id);
-            const transport = peer?.transports.find(t => t.id === transportId);
-            
-            if (!transport) return callback?.({ error: "Transport no encontrado" });
+            const room = getRoom(peer.roomId);
+
+            if (!room) return callback({ error: "Room not found" });
+
+            // 🔥 SOLO UN PRODUCER
+            if (room.activeProducer && room.activeProducer !== socket.id) {
+                console.warn("❌ Ya hay un productor activo");
+                return callback({ error: "Ya hay un productor activo" });
+            }
+
+            const transport = peer.transports.find(t => t.id === transportId);
 
             try {
-                const producer = await transport.produce({ kind, rtpParameters, appData });
-                
+                const producer = await transport.produce({
+                kind,
+                rtpParameters,
+                appData: {
+                    peerId: socket.id, // 🔥 CLAVE
+                },
+                });
+
+                // 🔥 Guardar en peer
+                if (!peer.producers) peer.producers = [];
                 peer.producers.push(producer);
-                
-                // Agregar referencia en la sala para que otros lo encuentren
-                const room = getRoom(peer.roomId);
+
+                 // 🔥 marcar activo
+                room.activeProducer = socket.id;
+
+                room.producers = [producer]; // 🔥 SOLO UNO
+
+                console.log("🎥 Producer ACTIVO:", producer.id);
+
+                // 🔥 Guardar en sala (FUENTE DE VERDAD)
                 if (!room.producers) room.producers = [];
+
+                if (!room.producers.find(p => p.id === producer.id)) {
                 room.producers.push(producer);
+                }
+
+                console.log("🎥 Producer creado:", producer.id);
 
                 callback({ id: producer.id });
 
-                // Notificar a todos los demás en la sala que hay un nuevo productor
+                socket.to(peer.roomId).emit("new-producer", {
+                    producerId: producer.id,
+                });
+
+                // 🔥 Notificar a otros
                 socket.to(peer.roomId).emit("new-producer", {
                     producerId: producer.id,
                     peerId: socket.id,
-                    userId: peer.userId,
-                    username: peer.username,
-                    kind: producer.kind
+                    kind: producer.kind,
                 });
+
+                if (room.activeProducer === socket.id) {
+                    room.activeProducer = null;
+                    room.producers = [];
+
+                    socket.to(peer.roomId).emit("producer-closed");
+                }
+
             } catch (error) {
+                console.error("❌ Error en produce:", error);
                 callback?.({ error: error.message });
             }
         });
 
-        // 🔹 Consumir (Recibir stream del SFU)
-        socket.on("consume", async ({ producerId, transportId, rtpCapabilities }, callback) => {
+        socket.on("getProducers", (callback) => {
             const peer = getPeer(socket.id);
-            const room = getRoom(peer?.roomId);
-            const transport = peer?.transports.find(t => t.id === transportId);
 
-            if (!room || !transport) return callback?.({ error: "Recursos no encontrados" });
+            if (!peer) {
+                console.warn("❌ Peer no encontrado en getProducers");
+                return callback([]);
+            }
 
-            // Buscar el productor globalmente en la sala
-            const producer = room.producers.find(p => p.id === producerId);
-            if (!producer) return callback?.({ error: "Productor no encontrado" });
+            const room = getRoom(peer.roomId);
 
-            if (!room.router.canConsume({ producerId, rtpCapabilities })) {
-                return callback?.({ error: "No se puede consumir" });
+            if (!room || !room.producers) {
+                console.warn("❌ No hay producers en la sala");
+                return callback([]);
+            }
+
+            // 🔥 Fuente única: room.producers
+            const producers = room.producers
+                .filter(p => p.appData?.peerId !== socket.id) // opcional
+                .map(p => p.id);
+
+            console.log("📡 getProducers:", producers);
+
+            callback(producers);
+        });
+
+        // 🔹 Consumir (Recibir stream del SFU)
+        socket.on("consume", async ({ producerId, rtpCapabilities }, callback) => {
+            const peer = getPeer(socket.id);
+
+            if (!peer) {
+                console.error("❌ Peer no encontrado");
+                return callback?.(null);
+            }
+
+            const room = getRoom(peer.roomId);
+
+            if (!room) {
+                console.error("❌ Sala no encontrada");
+                return callback?.(null);
+            }
+
+            const router = room.router;
+
+            // 🔥 Buscar producer en la sala
+            const producer = room.producers?.find(p => p.id === producerId);
+
+            if (!producer) {
+                console.error("❌ Productor no encontrado:", producerId);
+                return callback?.(null);
+            }
+
+            if (!router.canConsume({ producerId, rtpCapabilities })) {
+                console.error("❌ No se puede consumir");
+                return callback?.(null);
+            }
+
+            // 🔥 Buscar transport de consumo
+            const transport = peer.transports.find(t => t.appData?.consumer);
+
+            if (!transport) {
+                console.error("❌ No hay transport de consumo");
+                return callback?.(null);
             }
 
             try {
                 const consumer = await transport.consume({
                     producerId,
                     rtpCapabilities,
-                    paused: true, // Siempre pausado inicialmente
+                    paused: false,
                 });
 
+                if (!peer.consumers) peer.consumers = [];
                 peer.consumers.push(consumer);
+
+                console.log("📺 Consumer creado:", consumer.id);
 
                 callback({
                     id: consumer.id,
@@ -361,10 +480,12 @@ export default (httpServer) => {
                     kind: consumer.kind,
                     rtpParameters: consumer.rtpParameters,
                 });
+
             } catch (error) {
-                callback?.({ error: error.message });
+                console.error("❌ Error en consume:", error);
+                callback?.(null);
             }
-        });
+            });
 
         // 🔹 Reanudar consumo
         socket.on("resume", async ({ consumerId }, callback) => {
@@ -378,22 +499,6 @@ export default (httpServer) => {
         });
 
         // 🔹 Obtener productores existentes (para usuarios que entran tarde)
-        socket.on("getProducers", (callback) => {
-            const peer = getPeer(socket.id);
-            const room = getRoom(peer?.roomId);
-
-            if (!room) return callback({ producers: [] });
-
-            // Filtrar productores que no sean del propio usuario
-            const producers = room.producers
-                .filter(p => !peer.producers.includes(p))
-                .map(p => ({
-                    producerId: p.id,
-                    kind: p.kind
-                }));
-
-            callback({ producers });
-        });
 
         // 🔹 Desconexión
         socket.on("disconnect", () => {
