@@ -8,6 +8,8 @@ import { getSocket  } from "../../hooks/socket";
 import * as mediasoupClient from "mediasoup-client";
 import useVideoQuality from "../../hooks/useVideoQuality";
 import useVisibility from "../../hooks/useVisibility";
+import { useRoomState } from "../../hooks/useRoomState";
+
 
 const VideoGeneral = () => {
   const [isAllowed, setIsAllowed] = useState(false);
@@ -36,6 +38,24 @@ const VideoGeneral = () => {
 
   const initializedRef = useRef(false); // 🔥 evita doble ejecución (React Strict)
   const rtpCapabilitiesRef = useRef(null);
+  const myRouterIdRef = useRef(null); // Guardar mi router asignado
+  const producerRouterIdRef=useRef(null);;
+  const consumerRouterIdsRef=useRef(null);
+
+  const [peers, setPeers] = useState([]);
+
+
+ // Usar el hook de estado de la sala
+  const {
+    getUserRouter,
+    getMyRouter,
+    areInSameRouter,
+    myRouterId,
+    producerRouterId,
+    consumerRouterIds
+  } = useRoomState(socketRef, roomId);
+
+
   const stateRef = useRef("IDLE");
 
    const encodings = [
@@ -97,8 +117,25 @@ const VideoGeneral = () => {
 
   // 3. INIT FLOW (el corazón)
   const initFlow = async () => {
+    // Escuchar lista de peers existentes
+    socketRef.current.on("existing-peers", ({ peers: existingPeers, userRouterMap }) => {
+      // Inicializar mapa de routers con usuarios existentes
+      Object.entries(userRouterMap).forEach(([userId, routerId]) => {
+        userRoutersMap.set(userId, routerId);
+      });
+      setPeers(existingPeers);
+    });
+
     await joinRoom();
+    
+    // Escuchar nuevos peers
+    socketRef.current.on("peer-joined", ({ peerId, userId, routerId }) => {
+      userRoutersMap.set(userId, routerId);
+      setPeers(prev => [...prev, { id: peerId, userId, routerId }]);
+    });
+
     await loadDevice();
+    
     await setupConsumerFlow();
   };
 
@@ -131,10 +168,24 @@ const VideoGeneral = () => {
 
   // 4. joinRoom
   const joinRoom = () => {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       socketRef.current.emit("join-room", { roomId, email }, (data) => { //se incluyo el email que no estaba 
+        if (data.error) {
+          reject(data.error);
+          return;
+        }
+
         rtpCapabilitiesRef.current = data.rtpCapabilities;
-        console.log("✅ Unido a la sala", roomId);
+
+        myRouterIdRef.current = data.routerId; // Guardar mi router asignado
+        producerRouterIdRef.current = data.producerRouterId;
+        consumerRouterIdsRef.current = data.consumerRouterIds;
+
+        console.log("✅ Unido a la sala", roomId, "Router asignado:", data.routerId);
+        console.log("📡 Mi router ID:", myRouterId.current);
+        console.log("🎬 Producer router ID:", producerRouterId.current);
+        console.log("👥 Consumer routers IDs:", consumerRouterIds.current);
+
         resolve();
       });
     });
@@ -312,24 +363,61 @@ const VideoGeneral = () => {
 
   // 🎥 consume
   const consume = async (producerId) => {
-    const data = await new Promise((resolve) => {
-      socketRef.current.emit(
-        "consume",
-        {
-          producerId,
-          rtpCapabilities: deviceRef.current.rtpCapabilities,
+
+    try {
+      // Obtener router del productor
+      const producerRouter = await getUserRouter(producerId);
+      const myRouter = getMyRouter();
+      
+      console.log(`🔍 Productor ${producerUserId} está en router ${producerRouter}`);
+      console.log(`🔍 Mi router es ${myRouter}`);
+
+      if (producerRouter === myRouter) {
+        console.log("✅ Mismo router - consumir directamente");
+
+        const data = await new Promise((resolve) => {
+          socketRef.current.emit(
+            "consume",
+            {
+              producerId,
+              rtpCapabilities: deviceRef.current.rtpCapabilities,
+              consumerRouterId: myRouter,
+              roomId,
+              email
+            },
+            resolve
+          );
+        })
+      } 
+      else {
+        console.log("🔗 Diferentes routers - crear pipe transport");
+        
+        // Crear pipe entre routers
+        socketRef.current.emit("create-pipe", {
           roomId,
-          email
-        },
-        resolve
-      );
-    });
+          producerSocketId,
+          targetRouterId: myRouter // Mi router como destino
+        }, (response) => {
+          console.log("Pipe creado:", response);
+          // Manejar el pipe...
+        });
+        
+        // Escuchar pipe creado
+        socketRef.current.once("pipe-created", (data) => {
+          console.log(`✅ Pipe creado entre routers ${producerRouter} -> ${myRouter}`);
+          // Crear consumer con el pipe...
+        });
+      }
+    }
+    catch (error) {
+      console.error("Error al consumir stream:", error);
+    }
 
     if (!data) {
       console.warn("❌ Productor no encontrado:", producerId);
       return;
     }
-
+    
 
     //se limpia el consumerRef para evitar acumulados de tracks (🔥 clave para el caos que viste)
     const existingConsumer = consumersRef.current.find(
@@ -355,7 +443,6 @@ const VideoGeneral = () => {
     console.log("🎥 Consumer creado frontend");
     console.log("🎥 kind:", data.kind);
     console.log("🎥 track:", consumer.track.kind);
-
 
     await new Promise((resolve)=>{
       socketRef.current.emit("resume-consumer", 
@@ -494,6 +581,7 @@ const VideoGeneral = () => {
       });
     }
   }, []);
+
 
   // Dentro de tu función consume o en un useEffect que escuche los consumers
   useEffect(() => {
