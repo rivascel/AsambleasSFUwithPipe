@@ -1,9 +1,15 @@
-import mediasoup from 'mediasoup'; 
+// router.js
+
 import { config } from "./config.js";
-import { createWorkers, getWorker, getAllWorkers, getWorkerById, getWorkerForRouter } from "./worker.js";
+import { createWorkers, getWorker, getWorkerForRouter } from "./worker.js";
+
+await createWorkers();
+
+/* =========================================================
+   GLOBAL STATE
+========================================================= */
 
 const rooms = new Map();
-await createWorkers();
 
 /**
  * producerId -> {
@@ -24,7 +30,6 @@ const globalProducers = new Map();
  */
 const pipeCache = new Map();
 
-
 /* =========================================================
    ROOM
 ========================================================= */
@@ -33,7 +38,8 @@ export async function createRoom(roomId) {
   const workerWrapper = getWorker();
 
   // Router principal (donde vive el broadcaster/admin)
-  const producerRouter = await workerWrapper.worker.createRouter({
+  const producerRouter =
+    await workerWrapper.worker.createRouter({
       mediaCodecs: config.mediasoup.router.mediaCodecs
     });
 
@@ -46,18 +52,24 @@ export async function createRoom(roomId) {
 
   const room = {
     roomId,
+
     producerRouter,
+
     /**
      * workerId -> router
      */
     consumerRouters: new Map(),
+
     peers: new Map(),
+
     createdAt: Date.now()
   };
 
   rooms.set(roomId, room);
 
-  console.log(`📡 Room ${roomId} creada -> Producer Router ${producerRouter.id}`);
+  console.log(
+    `📡 Room ${roomId} creada -> Producer Router ${producerRouter.id}`
+  );
 
   return room;
 }
@@ -70,7 +82,10 @@ export function getRoom(roomId) {
    ROUTER CONSUMIDOR ON DEMAND
 ========================================================= */
 
-export async function getOrCreateConsumerRouter(roomId, workerWrapper) {
+export async function getOrCreateConsumerRouter(
+  roomId,
+  workerWrapper
+) {
   const room = rooms.get(roomId);
 
   if (!room)
@@ -82,7 +97,8 @@ export async function getOrCreateConsumerRouter(roomId, workerWrapper) {
   }
 
   // Crear nuevo router consumidor
-  const router = await workerWrapper.worker.createRouter({
+  const router =
+    await workerWrapper.worker.createRouter({
       mediaCodecs:
         config.mediasoup.router.mediaCodecs
     });
@@ -94,7 +110,9 @@ export async function getOrCreateConsumerRouter(roomId, workerWrapper) {
     router
   );
 
-  console.log(`🧩 Consumer Router creado en Worker ${workerWrapper.id}`);
+  console.log(
+    `🧩 Consumer Router creado en Worker ${workerWrapper.id}`
+  );
 
   return router;
 }
@@ -103,77 +121,64 @@ export async function getOrCreateConsumerRouter(roomId, workerWrapper) {
    PEERS
 ========================================================= */
 
-export async function addPeerToRoom(roomId,  socketId,  isBroadcaster = false) {
-
+export async function addPeerToRoom(
+  roomId,
+  socketId,
+  isBroadcaster = false
+) {
   const room = rooms.get(roomId);
 
-  if (!room) {
+  if (!room)
     throw new Error("Room no encontrada");
-  }
 
   let router;
   let workerId;
 
-  // Broadcaster SIEMPRE en producer router
+  // Admin/Broadcaster SIEMPRE usa producerRouter
   if (isBroadcaster) {
-
     router = room.producerRouter;
 
-    const worker = getWorkerForRouter(router.id);
+    const workerWrapper =
+      getWorkerForRouter(router.id);
 
-    workerId = worker.id;
-
+    workerId = workerWrapper.id;
   } else {
 
-    // BALANCEO REAL
+    // Viewer -> balanceado
+    const workerWrapper = getWorker();
 
-    const workers = getAllWorkers();
+    workerId = workerWrapper.id;
 
-    const workerLoads = workers.map(worker => {
-
-      const peerCount =
-        Array
-          .from(room.peers.values())
-          .filter(p => p.workerId === worker.id).length; //workerId viene de peer.
-
-      return {
-        worker,
-        peerCount
-      };
-    });
-
-    //busca el worker con menos peers asignados para balancear la carga de manera equitativa entre los workers disponibles.
-    const selected = workerLoads.reduce(
-      (min, curr) => curr.peerCount < min.peerCount ? curr : min //min acumulador, curr elemento actual
-      //min es el worker con menos peers asignados encontrado hasta el momento, y curr es el worker actual que se está evaluando. 
-      //Si curr.peerCount es menor que min.peerCount, entonces curr se convierte en el nuevo valor de min; de lo contrario, 
-      //min permanece sin cambios.
-    );
-
-    workerId = selected.worker.id;
-
-    router = await getOrCreateConsumerRouter(
-      roomId,
-      selected.worker
-    );
+    router =
+      await getOrCreateConsumerRouter(
+        roomId,
+        workerWrapper
+      );
   }
 
-  const peer = {
+  room.peers.set(socketId, {
     id: socketId,
+
     roomId,
-    router,
+
     routerId: router.id,
+
     workerId,
+
     transports: [],
+
     producers: [],
+
     consumers: [],
+
     rtpCapabilities: null,
+
     isBroadcaster
-  };
+  });
 
-  room.peers.set(socketId, peer);
-
-  console.log(`👤 Peer ${socketId} -> Worker ${workerId}`);
+  console.log(
+    `👤 Peer ${socketId} agregado -> Router ${router.id}`
+  );
 
   return router;
 }
@@ -190,11 +195,29 @@ export function getPeer(roomId, socketId) {
    PRODUCERS
 ========================================================= */
 
-export function registerProducer({ producer,  roomId,  peerId,  routerId,  workerId }) {
+export function registerProducer({
+  producer,
+  roomId,
+  peerId,
+  routerId,
+  workerId
+}) {
 
-  globalProducers.set(producer.id, { producer, roomId, peerId, routerId, workerId });
+  globalProducers.set(producer.id, {
+    producer,
 
-  console.log(`🎥 Producer registrado ${producer.id}`);
+    roomId,
+
+    peerId,
+
+    routerId,
+
+    workerId
+  });
+
+  console.log(
+    `🎥 Producer registrado ${producer.id}`
+  );
 }
 
 export function getProducerInfo(producerId) {
@@ -205,24 +228,35 @@ export function getProducerInfo(producerId) {
    PIPE PRODUCER
 ========================================================= */
 
-export async function pipeProducerToRouter({ producerId, targetRouter }) {
+export async function pipeProducerToRouter({
+  producerId,
+  targetRouter
+}) {
 
-  const producerInfo = globalProducers.get(producerId);
+  const producerInfo =
+    globalProducers.get(producerId);
 
   if (!producerInfo) {
     throw new Error("Producer no encontrado");
   }
 
   // Ya existe pipe
-  const cacheKey = `${producerId}-${targetRouter.id}`;
+  const cacheKey =
+    `${producerId}-${targetRouter.id}`;
 
   if (pipeCache.has(cacheKey)) {
     return pipeCache.get(cacheKey);
   }
 
-  const sourceWorker = getWorkerForRouter( producerInfo.routerId );
+  const sourceWorker =
+    getWorkerForRouter(
+      producerInfo.routerId
+    );
 
-  const sourceRouter = sourceWorker.routers.get( producerInfo.routerId );
+  const sourceRouter =
+    sourceWorker.routers.get(
+      producerInfo.routerId
+    );
 
   // MISMO ROUTER
   if (sourceRouter.id === targetRouter.id) {
@@ -233,13 +267,16 @@ export async function pipeProducerToRouter({ producerId, targetRouter }) {
     };
   }
 
-  console.log(`🔗 Pipe ${producerId} -> ${targetRouter.id}`);
-
-  // CASO 2:
-  // routers diferentes
+  console.log(
+    `🔗 Pipe ${producerId} -> ${targetRouter.id}`
+  );
 
   // MAGIA REAL DE MEDIASOUP
-  const pipeResult = await sourceRouter.pipeToRouter({ producerId, router: targetRouter });
+  const pipeResult =
+    await sourceRouter.pipeToRouter({
+      producerId,
+      router: targetRouter
+    });
 
   /**
    * pipeResult:
@@ -261,23 +298,36 @@ export async function pipeProducerToRouter({ producerId, targetRouter }) {
    REMOVE PEER
 ========================================================= */
 
-export function removePeerFromRoom(roomId, socketId) {
+export function removePeerFromRoom(
+  roomId,
+  socketId
+) {
 
   const room = rooms.get(roomId);
+
   if (!room) return;
-  const peer = room.peers.get(socketId);
+
+  const peer =
+    room.peers.get(socketId);
 
   if (!peer) return;
 
   peer.transports.forEach(t => t.close());
+
   peer.producers.forEach(p => {
+
     globalProducers.delete(p.id);
+
     p.close();
   });
 
   peer.consumers.forEach(c => c.close());
+
   room.peers.delete(socketId);
-  console.log(`👋 Peer ${socketId} eliminado`);
+
+  console.log(
+    `👋 Peer ${socketId} eliminado`
+  );
 }
 
 /* =========================================================
@@ -287,5 +337,3 @@ export function removePeerFromRoom(roomId, socketId) {
 export function getAllRooms() {
   return Array.from(rooms.values());
 }
-
-

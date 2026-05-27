@@ -2,7 +2,6 @@ import mediasoup from "mediasoup";
 import os from "os";
 import { config } from "./config.js";
 
-// let worker;
 const workers = [];
 let nextWorkerIndex = 0;
 
@@ -24,7 +23,7 @@ export async function createWorkers() {
       worker, 
       routers: new Map(),
       consumersCount: 0,
-      id
+      id: i
     });
      console.log(`🧵 Worker ${i} creado (PID: ${worker.pid})`);
   }

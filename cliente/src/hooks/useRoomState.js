@@ -29,31 +29,33 @@ export const useRoomState = (socketRef, roomId) => {
     };
   }, [socketRef.current]);
 
-  // Función para obtener el router de un usuario
+
+  // Función para obtener el router de un usuario 
   const getUserRouter = async (userId) => 
     {
-        // Primero verificar en el mapa local
-        if (userRoutersMap.current.has(userId)) {
-        return userRoutersMap.current.get(userId);
+      // Primero verificar en el mapa local
+      if (userRoutersMap.current.has(userId)) {
+      return userRoutersMap.current.get(userId);
+      }
+
+      // Si no está en el mapa, consultar al servidor
+      return new Promise((resolve, reject) => {
+        if (!socketRef.current) {
+            reject(new Error("Socket no conectado"));
+            return;
         }
 
-        // Si no está en el mapa, consultar al servidor
-        return new Promise((resolve, reject) => {
-            if (!socketRef.current) {
-                reject(new Error("Socket no conectado"));
-                return;
-            }
-
-            socketRef.current.emit("get-user-router", { userId }, (response) => {
-                if (response.error) {
-                reject(new Error(response.error));
-                } else {
-                // Guardar en cache local
-                userRoutersMap.current.set(userId, response.routerId);
-                resolve(response.routerId);
-                }
-            });
+        socketRef.current.emit("get-user-router", { userId }, (response) => {
+          if (response.error) {
+            reject(new Error(response.error));
+          } else {
+          // Guardar en cache local
+          userRoutersMap.current.set(userId, response.routerId);
+          myRouterId.current = userRoutersMap(userId, response.routerId);
+          resolve(response.routerId);
+          }
         });
+      });
     };
 
   // Función para obtener mi router

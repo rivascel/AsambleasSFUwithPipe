@@ -3,6 +3,8 @@ import { UserContext } from "../../components/UserContext";
 import { io } from "socket.io-client";
 // import { startLocalStream, stopLocalStream, getLocalStream } from '../../hooks/webrtc-client';
 import { listenToRequests, offStreaming, getPendingRequestById, getApprovedUserById } from '../../supabase-client';
+import { pipeProducerToRouter } from "../../hooks/router.js";
+
 import AppContext from '../../context/AppContext';
 import { getSocket  } from "../../hooks/socket";
 import * as mediasoupClient from "mediasoup-client";
@@ -46,15 +48,7 @@ const VideoGeneral = () => {
 
 
  // Usar el hook de estado de la sala
-  const {
-    getUserRouter,
-    getMyRouter,
-    areInSameRouter,
-    myRouterId,
-    producerRouterId,
-    consumerRouterIds
-  } = useRoomState(socketRef, roomId);
-
+  const { getUserRouter,getMyRouter, areInSameRouter, myRouterId, producerRouterId, consumerRouterIds } = useRoomState(socketRef, roomId);
 
   const stateRef = useRef("IDLE");
 
@@ -137,6 +131,11 @@ const VideoGeneral = () => {
     await loadDevice();
     
     await setupConsumerFlow();
+
+    return () => {
+      socketRef.current.off("existing-peers");
+      socketRef.current.off("peer-joined");
+    };
   };
 
   const startProducing = async () => {
@@ -363,119 +362,197 @@ const VideoGeneral = () => {
 
   // 🎥 consume
   const consume = async (producerId) => {
-
     try {
-      // Obtener router del productor
-      const producerRouter = await getUserRouter(producerId);
-      const myRouter = getMyRouter();
-      
-      console.log(`🔍 Productor ${producerUserId} está en router ${producerRouter}`);
-      console.log(`🔍 Mi router es ${myRouter}`);
 
-      if (producerRouter === myRouter) {
-        console.log("✅ Mismo router - consumir directamente");
+    const data =
+      await new Promise(
+        (resolve, reject) => {
 
-        const data = await new Promise((resolve) => {
           socketRef.current.emit(
             "consume",
             {
               producerId,
-              rtpCapabilities: deviceRef.current.rtpCapabilities,
-              consumerRouterId: myRouter,
-              roomId,
-              email
+              rtpCapabilities: deviceRef.current.rtpCapabilities
             },
-            resolve
+            (response) => {
+
+              if (response?.error) {
+                reject(
+                  new Error(response.error)
+                );
+              } else {
+                resolve(response);
+              }
+            }
           );
-        })
-      } 
-      else {
-        console.log("🔗 Diferentes routers - crear pipe transport");
-        
-        // Crear pipe entre routers
-        socketRef.current.emit("create-pipe", {
-          roomId,
-          producerSocketId,
-          targetRouterId: myRouter // Mi router como destino
-        }, (response) => {
-          console.log("Pipe creado:", response);
-          // Manejar el pipe...
-        });
-        
-        // Escuchar pipe creado
-        socketRef.current.once("pipe-created", (data) => {
-          console.log(`✅ Pipe creado entre routers ${producerRouter} -> ${myRouter}`);
-          // Crear consumer con el pipe...
-        });
-      }
-    }
-    catch (error) {
-      console.error("Error al consumir stream:", error);
-    }
+        }
+      );
 
-    if (!data) {
-      console.warn("❌ Productor no encontrado:", producerId);
-      return;
-    }
-    
+    await createAndSetupConsumer(data);
 
-    //se limpia el consumerRef para evitar acumulados de tracks (🔥 clave para el caos que viste)
+  } catch (error) {
+
+    console.error(
+      "Error consumiendo:",
+      error
+    );
+  }
+    //   const producerInfo = producersRef.current.get(producerId);
+    //   if (!producerInfo) {
+    //     console.error("No producer info found");  
+    //     return;
+    //   }
+
+    // try {
+    //   // Obtener router del productor
+    //   const { socketId: producerSocketId, userId: producerUserId } = producerInfo;
+    //   const producerRouter = await getUserRouter(producerId);
+    //   const myRouter = getMyRouter();
+      
+    //   console.log(`🔍 Productor ${producerId} está en router ${producerRouter}`);
+    //   console.log(`🔍 Mi router es ${myRouter}`);
+
+    //   if (producerRouter === myRouter) {
+    //     console.log("✅ Mismo router - consumir directamente");
+
+    //     const data = await new Promise((resolve, reject) => {
+    //       socketRef.current.emit(
+    //         "consume",
+    //         {
+    //           producerId,
+    //           rtpCapabilities: deviceRef.current.rtpCapabilities,
+    //           consumerRouterId: myRouter,
+    //           roomId,
+    //           email
+    //         },
+    //         (response) => {
+    //         if (response.error) reject(new Error(response.error));
+    //         else resolve(response);
+    //       }
+    //       );
+    //     })
+
+    //       // Crear consumer directamente
+    //       await createAndSetupConsumer(data);
+    //   } 
+      
+    //   else {
+    //     console.log("🔗 Diferentes routers - crear pipe transport");
+        
+    //     // Crear pipe y esperar 
+        
+        
+
+    //     const pipeData = await new Promise((reject) => {
+    //       // Usar callback para respuesta inmediata
+
+    //       const room = getRoom(roomId);
+    //       if (!room) throw new Error("Sala no encontrada");
+
+    //       const producerId = getPeer(roomId, producerSocketId); 
+    //       // const producerId = producerPeer.producers[0]?.id;
+    //        if (!producerId) { throw new Error("Producer no encontrado"); }
+
+    //       const consumerPeer = getPeer(roomId, socket.id);
+    //       if (!consumerPeer) {throw new Error("Consumer no encontrado");}
+
+    //       const pipeResult =await pipeProducerToRouter({ 
+    //         producerId, 
+    //         targetRouter: consumerPeer.router 
+    //       });
+
+    //       if (!pipeResult) {
+    //         reject(new Error("Error al crear pipe"));
+    //         return;
+    //       } else {
+    //         console.log("✅ Pipe creado con éxito:", pipeResult);
+    //       }
+
+    //       // Timeout por si el callback no se ejecuta
+    //       setTimeout(() => reject(new Error("Pipe creation timeout")), 5000);
+    //     });
+        
+    //     // Crear consumer con los datos del pipe
+    //     await createAndSetupConsumer({
+    //       id: pipeData.consumerId,
+    //       producerId: pipeData.producerId,
+    //       kind: pipeData.kind,
+    //       rtpParameters: pipeData.rtpParameters,
+    //       isPipe: true,
+    //       pipeId: pipeData.pipeId
+    //     });
+    //   }
+
+    // }
+    //   catch (error) {
+    //   console.error("Error al consumir stream:", error);
+    // }
+
+    // if (!data) {
+    //   console.warn("❌ Productor no encontrado:", producerId);
+    //   return;
+    // }
+
+  };
+
+  // Función auxiliar para crear y configurar el consumer
+  const createAndSetupConsumer = async (consumerData) => {
+    // Limpiar consumer existente del mismo tipo
     const existingConsumer = consumersRef.current.find(
-      c => c.kind === data.kind
+      c => c.kind === consumerData.kind
     );
 
     if (existingConsumer) {
       existingConsumer.close();
-
-      consumersRef.current =
-        consumersRef.current.filter(
-          c => c.id !== existingConsumer.id
-        );
+      consumersRef.current = consumersRef.current.filter(
+        c => c.id !== existingConsumer.id
+      );
     }
     
+    // Crear consumer con el transport (puede ser el mismo recvTransport)
     const consumer = await recvTransportRef.current.consume({
-      id: data.id,
-      producerId: data.producerId,
-      kind: data.kind,
-      rtpParameters: data.rtpParameters,
+      id: consumerData.id,
+      producerId: consumerData.producerId,
+      kind: consumerData.kind,
+      rtpParameters: consumerData.rtpParameters,
     });
 
-    console.log("🎥 Consumer creado frontend");
-    console.log("🎥 kind:", data.kind);
+    console.log(`🎥 Consumer creado (${consumerData.isPipe ? 'vía pipe' : 'directo'})`);
+    console.log("🎥 kind:", consumerData.kind);
     console.log("🎥 track:", consumer.track.kind);
 
-    await new Promise((resolve)=>{
+    // Resumir el consumer
+    await new Promise((resolve) => {
       socketRef.current.emit("resume-consumer", 
-        { consumerId: consumer.id }, resolve );
-    })
+        { consumerId: consumer.id }, resolve
+      );
+    });
 
     consumersRef.current.push(consumer);
 
-    // 🔥 1. Asegurar que tenemos un MediaStream limpio
+    // Manejar el stream remoto
     if (!remoteRef.current.srcObject) {
-        remoteRef.current.srcObject = new MediaStream();
+      remoteRef.current.srcObject = new MediaStream();
     }
 
     const stream = remoteRef.current.srcObject;
-
-    // 🔥 2. ELIMINAR tracks antiguos del mismo tipo para evitar el acumulado (el Array(4) que viste)
-    const existingTracks = stream.getTracks().filter(t => t.kind === data.kind);
+    
+    // Eliminar tracks antiguos del mismo tipo
+    const existingTracks = stream.getTracks().filter(t => t.kind === consumerData.kind);
     existingTracks.forEach(track => {
-        // track.stop(); // Detener el hardware
-        stream.removeTrack(track); // Quitar del stream
+      stream.removeTrack(track);
     });
 
-    // 🔥 3. Agregar el nuevo track limpio
-
-
+    // Agregar el nuevo track
     consumersRef.current.forEach(consumer => {
       if (!stream.getTracks().find(t => t.id === consumer.track.id)) {
         stream.addTrack(consumer.track);
       }
     });
 
+
     if (remoteRef.current && recvTransportRef.current.connectionState === 'connected') {
-      // Forzar que el elemento reconozca el nuevo stream
+    // Forzar que el elemento reconozca el nuevo stream
       try {
         remoteRef.current.srcObject = stream;
       
@@ -495,25 +572,43 @@ const VideoGeneral = () => {
         }
       }
     }
+    // Configurar y reproducir
+    if (remoteRef.current && recvTransportRef.current.connectionState === 'connected') {
+      try {
+        remoteRef.current.srcObject = stream;
+        remoteRef.current.muted = true;
+        remoteRef.current.playsInline = true;
+        
+        await remoteRef.current.play();
+        console.log("▶️ Reproducción iniciada con éxito");
+        
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          console.error("Error real de reproducción:", err);
+        }
+      }
+    }
 
-    console.log(`✅ Track de ${data.kind} actualizado. Total tracks:`, stream.getTracks().length);
-
-    // 🔥 4. Forzar visibilidad y reproducción
-    remoteRef.current.muted = true; // Obligatorio para video autoplay
-    remoteRef.current.playsInline = true;
-
-    remoteRef.current.play().catch(e => console.warn("Error play:", e));
-
+    console.log(`✅ Track de ${consumerData.kind} actualizado. Total tracks:`, stream.getTracks().length);
+      
+    return consumer;
   };
 
-  
+
   // 🔴 nuevos producers en tiempo real
   const listenForNewProducers = () => {
-    socketRef.current.on("new-producer", async ({ producerId }) => {
+    socketRef.current.on("new-producer", async ({ producerId, producerSocketId, userId, kind }) => {
       console.log("🆕 Nuevo producer:", producerId);
+
+      producersRef.current.set(producerId, { socketId: producerSocketId, userId, kind });
+
       if (producerId)
       await consume(producerId);
     });
+
+    return () => {
+      socketRef.current.off("new-producer");
+    };
   };
 
   const updateConsumers = () => {
