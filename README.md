@@ -1,1 +1,1 @@
-# AsambleasReactSFU
+Este programa permite la conexión de propietarios de un conjunto residencial
