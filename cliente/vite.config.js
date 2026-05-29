@@ -14,12 +14,8 @@ export default defineConfig({
   },
   base: '/',
   server: {
-  //   https: {
-  //     key: fs.readFileSync(path.resolve(__dirname, '../src/ssl/localhost-key.pem')),
-  //     cert: fs.readFileSync(path.resolve(__dirname, '../src/ssl/localhost.pem')),
-  //   },
+    host:'0.0.0.0',
     port: 5173,
-    // historyApiFallback: true
   }
 });
 

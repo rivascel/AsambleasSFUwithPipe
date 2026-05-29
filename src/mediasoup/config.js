@@ -31,10 +31,10 @@ export const config = {
     webRtcTransport: {
       listenIps: [
         {
-          ip: "127.0.0.1",
-          // ip: "0.0.0.0",
-          // announcedIp: '192.168.55.47', // luego pones tu IP pública
-          announcedIp: '127.0.0.1',
+          // ip: "127.0.0.1",
+          ip: "0.0.0.0",
+          announcedIp: '192.168.211.47', // luego pones tu IP pública
+          // announcedIp: '127.0.0.1',
           // announcedIp: undefined, // Si no tienes IP pública o estás detrás de NAT, deja esto como undefined
         },
         

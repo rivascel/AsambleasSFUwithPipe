@@ -2,7 +2,6 @@
 //archivo, y crea el servidor socket.io en tiempo real
 
 // import { normalizeModuleId } from "vite/module-runner";
-import { createRoomWithWorker  } from "./mediasoup/router.js";
 import { createRoom,  getRoom,  addPeerToRoom,  getPeer,  removePeerFromRoom,  registerProducer,  getProducerInfo,
   pipeProducerToRouter } from "./mediasoup/router.js";
 
@@ -266,7 +265,8 @@ export default (httpServer) => {
 
 
             // ✅ Verificar que el peer se guardó correctamente
-            const savedPeer = getOnePeerInRoom(roomId, socket.id);
+            const savedPeer = getPeer(roomId, socket.id); 
+
             console.log("✅ Peer guardado:", socket.id, savedPeer?.roomId);
 
             // Consultar router de un usuario
@@ -314,16 +314,14 @@ export default (httpServer) => {
 
             try {
 
-                const peer = getPeer(socket.roomId, socket.id);
+                const peer = getPeer(roomId, socket.id);
                 if (!peer) { throw new Error("Peer no encontrado"); }
 
                 const transport = await createWebRtcTransport(peer.router);
 
                 transport.appData = { consumer };
 
-                peer.transports.push(
-                    transport
-                );
+                peer.transports.push(transport);
 
                 transport.on("close", () => {
                     peer.transports = peer.transports.filter(t => t.id !== transport.id);
@@ -379,7 +377,7 @@ export default (httpServer) => {
         });
 
         // 🔹 Producir (Enviar stream al SFU)
-        socket.on("produce", async ({ transportId, kind, rtpParameters, roomId }, callback) => {
+        socket.on("produce", async ({ transportId, kind, rtpParameters, roomId, role }, callback) => {
             const room = await getRoom(roomId);
             // const peer = await getOnePeerInRoom(roomId, socket.id);
 
@@ -389,13 +387,6 @@ export default (httpServer) => {
                 throw new Error("Peer no encontrado");
             }
 
-            // if (!room || !peer) return callback({ error: "Room or peer  not found" });
-
-            // // 🔥 SOLO UN PRODUCER
-            // if (room.activeProducerId && room.activeProducerId !== socket.id) {
-            //     return callback({ error: "Ya hay un productor activo" });
-            // }
-
             const transport = peer.transports.find(t => t.id === transportId);
 
             try {
@@ -403,6 +394,7 @@ export default (httpServer) => {
                 kind,
                 rtpParameters,
                 appData: { peerId: socket.id, },
+                role
                 });
 
                 peer.producers.push(producer);
@@ -419,10 +411,10 @@ export default (httpServer) => {
                 // 🔥 Notificar a otros
                 socket.to(peer.roomId).emit("new-producer", {
                     producerId: producer.id,
-                    // producerSocketId: socket.id, // 👈 Socket ID del productor
-                    peerId: socket.id,
+                    producerSocketId: socket.id, // 👈 Socket ID del productor
+                    // peerId: socket.id,
                     kind: producer.kind,
-                    
+                    role: producer.role
                 });
                 console.log("📢 Emitiendo a:", peer.roomId);
 
@@ -448,18 +440,6 @@ export default (httpServer) => {
             const room = getRoom(roomId);
             if (!room) return callback?.([]);
 
-            // 🔥 Fuente única: room.producers
-            // if (room.activeProducerId) {
-            //     console.log("room.activeProducerId", room.activeProducerId);
-            //     const producers = Array.from(room.peers.values())
-            //         .flatMap(p => p.producers)
-            //         .find(p => p.id === room.activeProducerId) // solo el activo
-            //         console.log("productores", producers);
-            //         callback(producers);
-            //     } else { 
-            //         console.log("no hay productores");
-            //         callback(null);
-            //     }
             const producers = Array.from(room.peers.values())
               .flatMap(peer => peer.producers.map(
                   producer => ({
@@ -482,18 +462,13 @@ export default (httpServer) => {
         });
 
         // 🔹 Consumir (Recibir stream del SFU)
-        socket.on("consume", async ({ producerId, rtpCapabilities, roomId }, callback) => {
+        socket.on("consume", async ({ producerId, rtpCapabilities, roomId, role }, callback) => {
 
             try {
 
-                const consumerPeer = getPeer(socket.roomId, socket.id);
+                const consumerPeer = getPeer(roomId, socket.id);
 
                 if (!consumerPeer) {throw new Error("Consumer peer no encontrado");}
-
-                // producer global
-                // const producerInfo = getProducerInfo( producerId );
-
-                // if (!producerInfo) { throw new Error("Producer no encontrado"); }
 
                 // 🔥 Buscar transport de consumo
                 const transport = consumerPeer.transports.find(t => t.appData?.consumer);
@@ -504,34 +479,36 @@ export default (httpServer) => {
                 // PIPE AUTOMÁTICO
                 const { pipeProducer } = await pipeProducerToRouter({ producerId, targetRouter: consumerPeer.router });
 
-                // if (!consumerPeer.router.canConsume({ producerId: pipeProducer.id, rtpCapabilities }) ) {
-                //     throw new Error("Cannot consume");
-                // }
-
                 // VALIDAR CONSUMO
-                const canConsume = consumerPeer.router.canConsume({ producerId: pipeProducer.id, rtpCapabilities });
-
-                if (!canConsume) { 
+                if (!consumerPeer.router.canConsume({ producerId: pipeProducer.id, rtpCapabilities }) ) {
                     throw new Error("Cannot consume");
                 }
+                
+                // const canConsume = consumerPeer.router.canConsume({ producerId: pipeProducer.id, rtpCapabilities });
+
+                // if (!canConsume) { 
+                //     throw new Error("Cannot consume");
+                // }
 
 
                 // CONSUMER NORMAL
                 const consumer = await transport.consume({ producerId: pipeProducer.id, rtpCapabilities, paused: false });
 
-                peer.consumers.push(consumer);
+                consumerPeer.consumers.push(consumer);
 
                 console.log("📺 Consumer creado:", consumer.id);
           
 
                 callback({ 
+
                     id: consumer.id, 
                     producerId, 
                     kind: consumer.kind, 
-                    rtpParameters: consumer.rtpParameters 
+                    rtpParameters: consumer.rtpParameters,
+                    role
                 });
 
-                consumer.on("close", () => { peer.consumers = peer.consumers.filter(c => c.id !== consumer.id);});
+                consumer.on("close", () => { consumerPeer.consumers = consumerPeer.consumers.filter(c => c.id !== consumer.id);});
 
             } 
             catch (err) {
@@ -556,14 +533,15 @@ export default (httpServer) => {
                 const consumer = peer?.consumers.find(c => c.id === consumerId);
             
                 console.log("📺 Consumer encontrado:", !!consumer);
+                console.log("Tipo consumers:", peer.consumers.constructor.name);
 
                 await consumer.resume();
 
-                callback({ success: true });
+                callback?.({ success: true });
             } 
             catch (err) { 
                 console.error( "❌ resume-consumer",err);
-                callback({ error: err.message });
+                callback?.({ error: err.message });
             }
         });
 

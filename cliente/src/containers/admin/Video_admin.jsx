@@ -188,7 +188,8 @@ const VideoGeneral = () => {
                 transportId: transport.id,
                 kind,
                 rtpParameters,
-                roomId
+                roomId,
+                role: "admin"
               });
               
               callback({ id }); 
