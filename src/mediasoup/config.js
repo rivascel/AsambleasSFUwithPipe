@@ -1,3 +1,5 @@
+import { configEnv } from  "../config/config.js";
+
 export const config = {
   mediasoup: {
     worker: {
@@ -33,7 +35,9 @@ export const config = {
         {
           // ip: "127.0.0.1",
           ip: "0.0.0.0",
-          announcedIp: '192.168.211.47', // luego pones tu IP pública
+          // announcedIp: '192.168.211.47', // luego pones tu IP pública
+          // announcedIp: process.env.ANNOUNCED_IP, // luego pones tu IP pública
+          announcedIp: configEnv.announcedIp, // luego pones tu IP pública
           // announcedIp: '127.0.0.1',
           // announcedIp: undefined, // Si no tienes IP pública o estás detrás de NAT, deja esto como undefined
         },

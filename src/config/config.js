@@ -7,7 +7,8 @@ export const config = {
   FrontEndBaseUrl: process.env.FRONTEND_URL,
   BackEndBaseUrl: process.env.BACKEND_URL,
   jwtSecret: process.env.JWT_SECRET_KEY,
-  api_key:process.env.RESEND_API_KEY
+  api_key:process.env.RESEND_API_KEY,
+  announcedIp: process.env.ANNOUNCED_IP,
 
 }
 // module.exports = { config };
