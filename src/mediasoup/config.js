@@ -34,7 +34,8 @@ export const config = {
       listenIps: [
         {
           // ip: "127.0.0.1",
-          ip: "0.0.0.0",
+          // ip: "0.0.0.0",
+          ip: configEnv.listenIp, // Escucha en todas las interfaces de red
           // announcedIp: '192.168.211.47', // luego pones tu IP pública
           // announcedIp: process.env.ANNOUNCED_IP, // luego pones tu IP pública
           announcedIp: configEnv.announcedIp, // luego pones tu IP pública
