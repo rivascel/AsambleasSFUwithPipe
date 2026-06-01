@@ -1,5 +1,5 @@
 import mediasoup from 'mediasoup'; 
-import { config } from "./config.js";
+import { configuration } from "./config.js";
 import { createWorkers, getWorker, getAllWorkers, getWorkerById, getWorkerForRouter } from "./worker.js";
 
 const rooms = new Map();
@@ -34,7 +34,7 @@ export async function createRoom(roomId) {
 
   // Router principal (donde vive el broadcaster/admin)
   const producerRouter = await workerWrapper.worker.createRouter({
-      mediaCodecs: config.mediasoup.router.mediaCodecs
+      mediaCodecs: configuration.mediasoup.router.mediaCodecs
     });
 
   // IMPORTANTE:
@@ -84,7 +84,7 @@ export async function getOrCreateConsumerRouter(roomId, workerWrapper) {
   // Crear nuevo router consumidor
   const router = await workerWrapper.worker.createRouter({
       mediaCodecs:
-        config.mediasoup.router.mediaCodecs
+        configuration.mediasoup.router.mediaCodecs
     });
 
   workerWrapper.routers.set(router.id, router);

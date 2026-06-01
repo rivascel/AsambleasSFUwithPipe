@@ -1,6 +1,6 @@
 import { config } from  "../config/config.js";
 
-export const config = {
+export const configuration = {
   mediasoup: {
     worker: {
       rtcMinPort: 40000,

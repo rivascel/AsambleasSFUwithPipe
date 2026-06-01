@@ -1,6 +1,6 @@
 import mediasoup from "mediasoup";
 import os from "os";
-import { config } from "./config.js";
+import { configuration } from "./config.js";
 
 const workers = [];
 let nextWorkerIndex = 0;
@@ -10,8 +10,8 @@ export async function createWorkers() {
 
   for (let i = 0; i < numCores; i++) {
     const worker = await mediasoup.createWorker({
-      rtcMinPort: config.mediasoup.worker.rtcMinPort,
-      rtcMaxPort: config.mediasoup.worker.rtcMaxPort,
+      rtcMinPort: configuration.mediasoup.worker.rtcMinPort,
+      rtcMaxPort: configuration.mediasoup.worker.rtcMaxPort,
     });
 
     worker.on("died", () => {
