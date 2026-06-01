@@ -13,7 +13,8 @@ const RegisterOwner = ({ onRegister }) => {
     const { login } = useContext(UserContext);
     const handleSendLink = async () => {
       try {
-        await axios.post(`${API_URL}/api/request-magic-link`, 
+        // await axios.post(`${API_URL}/api/request-magic-link`, 
+        await axios.post(`api/request-magic-link`, 
             {   email,
                 role: "owner"
             },
