@@ -2,12 +2,12 @@ import React, { useState, useContext, useEffect } from "react";
 import axios from "axios";
 import { UserContext } from "../components/UserContext";
 import "../styles/Header.css";
-import AppContext from '../context/AppContext';
+// import AppContext from '../context/AppContext';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
 const RegisterOwner = ({ onRegister }) => {
-    const { API_URL } = useContext(AppContext);
+    // const { API_URL } = useContext(AppContext);
     const [email, setEmail] = useState("");
     const [message, setMessage] = useState("");
     const { login } = useContext(UserContext);
