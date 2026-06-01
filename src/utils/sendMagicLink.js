@@ -14,8 +14,6 @@ if (!config.api_key) {
 
 const resend = new Resend(config.api_key); // Guárdala en .env
 
-
-
 export default async function sendMagicLink(to, role, token) {
   const magicLink = `${config.BackEndBaseUrl}/api/magic-link?token=${token}`;
 
