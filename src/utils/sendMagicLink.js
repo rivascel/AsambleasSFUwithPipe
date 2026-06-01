@@ -5,12 +5,9 @@ import { Resend } from "resend";
 import  { config }  from "../config/config.js";
 
 if (!config.api_key) {
-  
-
   console.error('❌ RESEND_API_KEY no está definida');
   throw new Error('Missing RESEND_API_KEY');
 }
-
 
 const resend = new Resend(config.api_key); // Guárdala en .env
 

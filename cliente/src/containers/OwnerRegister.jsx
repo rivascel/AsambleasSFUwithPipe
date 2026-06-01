@@ -4,14 +4,16 @@ import { UserContext } from "../components/UserContext";
 import "../styles/Header.css";
 import AppContext from '../context/AppContext';
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const RegisterOwner = ({ onRegister }) => {
-    const { apiUrl } = useContext(AppContext);
+    const { API_URL } = useContext(AppContext);
     const [email, setEmail] = useState("");
     const [message, setMessage] = useState("");
     const { login } = useContext(UserContext);
     const handleSendLink = async () => {
       try {
-        await axios.post(`${apiUrl}/api/request-magic-link`, 
+        await axios.post(`${API_URL}/api/request-magic-link`, 
             {   email,
                 role: "owner"
             },
