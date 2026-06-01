@@ -39,7 +39,8 @@ const allowedOrigins = [
   'https://asambleasreact.onrender.com', // Agrega todas las variantes que veas en tus logs
   'http://localhost:5173',
   'http://localhost:5174',
-  'http://localhost:3000'
+  'http://localhost:3000',
+  'https://asambleasgeneral.onrender.com'
 ];
 
 const originConfig = process.env.NODE_ENV === 'development' 
