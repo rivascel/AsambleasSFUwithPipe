@@ -213,9 +213,7 @@ export default (httpServer) => {
             // Agregar peer y obtener el router asignado
             const assignedRouterId = router.id;
 
-            
-
-              // Notificar a otros usuarios sobre el router de este usuario
+            // Notificar a otros usuarios sobre el router de este usuario
             socket.to(roomId).emit("user-router-assigned", {
                 userId: email,
                 routerId: userRouterMap.email

@@ -12,5 +12,4 @@ export const config = {
   ip: process.env.IP,
 
 }
-// module.exports = { config };
 

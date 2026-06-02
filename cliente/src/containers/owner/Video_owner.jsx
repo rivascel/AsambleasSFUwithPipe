@@ -353,14 +353,14 @@ const VideoGeneral = () => {
 
         producersRef.current.set(producerId, { kind, role });
         console.log(`📡 Consumiendo ${kind}:`, producerId);
-        await consume({producerId, role, kind}); 
+        await consume({ producerId, role, kind }); 
       
     }
     setState("CONSUMING_EXISTING");
   };
 
   // 🎥 consume
-  const consume = async ({producerId, role}) => {
+  const consume = async ({producerId, role, kind}) => {
 
     try {
       const data = await new Promise((resolve, reject) => {
@@ -369,7 +369,7 @@ const VideoGeneral = () => {
             producerId,
             rtpCapabilities: deviceRef.current.rtpCapabilities,
             roomId,
-            role
+            role,
           },
           (response) => {
 
