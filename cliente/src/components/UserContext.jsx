@@ -14,6 +14,7 @@ const UserProvider = ({ children }) => {
 
 
   const [email, setEmail] = useState("");
+  const [role, setRole] = useState(""); // NUEVO
   const [users, setUsers] = useState([]); // NUEVO
   const [adminId, setAdminId] = useState(""); // NUEVO
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -81,8 +82,9 @@ const UserProvider = ({ children }) => {
     }
   };
 
-  const login = (email, data) => {
+  const login = (email, role, data) => {
     setEmail(email);
+    setRole(role);
     setIsAuthenticated(true);
     setOwnerData(data);
     // setVotingEnabled(true);
