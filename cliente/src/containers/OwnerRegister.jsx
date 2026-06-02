@@ -4,6 +4,7 @@ import { UserContext } from "../components/UserContext";
 import "../styles/Header.css";
 import AppContext from '../context/AppContext';
 
+const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_URL_LOCAL; 
 
 const RegisterOwner = ({ onRegister }) => {
     const { API_URL } = useContext(AppContext);
