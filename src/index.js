@@ -6,7 +6,6 @@
 
 import 'dotenv/config';
 
-// const { config } = require('dotenv');
 
 // const express = require("express");
 import express from "express";
@@ -22,6 +21,7 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);  
+
 
 // app.use(cors({
 //   origin: ['https://localhost:5173','https://localhost:3000'],

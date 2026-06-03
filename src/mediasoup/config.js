@@ -30,9 +30,14 @@ export const configuration = {
         },
       ],
     },
+
+    
     webRtcTransport: {
-      listenIps: [
+
+      
+      listenInfos: [
         {
+          protocol: "udp",
           ip: config.ip, // Escucha en todas las interfaces de red
           announcedIp: config.announcedIp, // luego pones tu IP pública
 
@@ -50,15 +55,17 @@ export const configuration = {
       maxSctpMessageSize: 262144,
       maxIncomingBitrate: 1500000,
       
-      enableUdp: true,
-      enableTcp: true,
-      preferUdp: true,
+      
     },
+
+    
     pipeTransport: {
       listenIp: "127.0.0.1",
       enableRtx: true,
       enableSrtp: false,
       numWorkers: 4 // Número de workers para balanceo
     }
+    
   },
+  
 };

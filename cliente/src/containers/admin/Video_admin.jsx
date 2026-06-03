@@ -147,8 +147,7 @@ const VideoGeneral = () => {
       socketRef.current.emit(
         "createTransport", { consumer: false, roomId }, (params) => 
         {
-          
-            // Verificar que params tiene los datos necesarios
+          // Verificar que params tiene los datos necesarios
           if (!params.iceParameters || !params.iceCandidates || !params.dtlsParameters) {
             console.error("❌ Params incompletos:", params);
             reject(new Error("Missing required transport parameters"));
