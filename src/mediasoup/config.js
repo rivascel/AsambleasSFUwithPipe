@@ -30,23 +30,15 @@ export const configuration = {
         },
       ],
     },
-
     
     webRtcTransport: {
 
-      
       listenInfos: [
         {
           protocol: "udp",
           ip: config.ip, // Escucha en todas las interfaces de red
           announcedIp: config.announcedIp, // luego pones tu IP pública
 
-          // ip: "127.0.0.1",
-          // ip: "0.0.0.0",
-          // announcedIp: '192.168.211.47', // luego pones tu IP pública
-          // announcedIp: process.env.ANNOUNCED_IP, // luego pones tu IP pública
-          // announcedIp: '127.0.0.1',
-          // announcedIp: undefined, // Si no tienes IP pública o estás detrás de NAT, deja esto como undefined
         },
                 {
           protocol: "tcp",

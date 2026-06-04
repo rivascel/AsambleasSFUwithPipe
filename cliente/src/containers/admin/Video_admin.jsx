@@ -534,52 +534,52 @@ const updateConsumers = () => {
     <div className="space-y-6">
       <div className="bg-white p-4 rounded shadow-md">
 
-      <h3 className="text-lg font-medium mb-2">Transmisión de Asamblea</h3>
-      
-      {stream ? (
-        <>
-          <div className="flex gap-4 mb-4">
-            <video ref={localRef} autoPlay playsInline muted className="rounded border"></video>
-          </div>
-        </>
+        <h3 className="text-lg font-medium mb-2">Transmisión de Asamblea</h3>
         
-        ):(
+        {stream ? (
           <>
-          <p className="text-red-600 font-medium mb-4">No hay transmisión en vivo en este momento.</p>
+            <div className="flex gap-4 mb-4">
+              <video ref={localRef} autoPlay playsInline muted className="rounded border"></video>
+            </div>
           </>
-        )
-      }
-
-      <div className="controls">
-        {!isBroadcasting ? (
-          <button
-            onClick={openBroadcasting}
-            className="bg-blue-600 text-blue px-6 py-2 rounded hover:bg-blue-700 disabled:bg-gray-400"
-          >
-            Iniciar transmisión
-          </button> 
+          
           ):(
-          <button
-            onClick={hangUpBroadcasting}
-            className="bg-red-600 text-blue px-6 py-2 rounded hover:bg-red-700 disabled:bg-gray-400"
-          >
-            Detener transmisión
-          </button>  
+            <>
+            <p className="text-red-600 font-medium mb-4">No hay transmisión en vivo en este momento.</p>
+            </>
           )
         }
-      </div>
 
-      <h3 className="text-lg font-medium mb-2">Intervencion de copropietario</h3>
-      
-      {
-        remote ? (
-          <div className="flex gap-4 mb-4">
-          <video ref={remoteRef} autoPlay playsInline muted className="rounded border"></video>
+        <div className="controls">
+          {!isBroadcasting ? (
+            <button
+              onClick={openBroadcasting}
+              className="bg-blue-600 text-blue px-6 py-2 rounded hover:bg-blue-700 disabled:bg-gray-400"
+            >
+              Iniciar transmisión
+            </button> 
+            ):(
+            <button
+              onClick={hangUpBroadcasting}
+              className="bg-red-600 text-blue px-6 py-2 rounded hover:bg-red-700 disabled:bg-gray-400"
+            >
+              Detener transmisión
+            </button>  
+            )
+          }
         </div>
-        ):(
-          <p className="text-red-600 font-medium mb-4">No hay intervencion en este momento.</p>
-        )
-      }
+
+        <h3 className="text-lg font-medium mb-2">Intervencion de copropietario</h3>
+        
+        {
+          remote ? (
+            <div className="flex gap-4 mb-4">
+            <video ref={remoteRef} autoPlay playsInline muted className="rounded border"></video>
+          </div>
+          ):(
+            <p className="text-red-600 font-medium mb-4">No hay intervencion en este momento.</p>
+          )
+        }
       </div>
     </div>
   )

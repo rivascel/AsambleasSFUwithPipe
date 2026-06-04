@@ -703,7 +703,7 @@ const VideoGeneral = () => {
           <h2 className="text-xl font-semibold mb-2">Intervención asambleista</h2>
           <div style={{ width: '100%', aspectRatio: '16/9', backgroundColor: '#1a1a1a' }} className="rounded overflow-hidden">
               <video 
-                  ref={remoteRef} 
+                  ref={remoteRefTemp} 
                   autoPlay 
                   playsInline 
                   muted 
@@ -716,7 +716,7 @@ const VideoGeneral = () => {
         <h2 className="text-xl font-semibold mb-2">Intervención del copropietario</h2>
         {viewerReady ? (
           <>
-            <video ref={localRef} autoPlay playsInline className="w-full rounded border"></video>
+            <video ref={remoteRef} autoPlay playsInline className="w-full rounded border"></video>
 
             <div className="controls">
               {!isAllowed ? (
