@@ -484,6 +484,10 @@ const VideoGeneral = () => {
           console.error("Error real de reproducción:", err);
         }
       }
+    } else {
+      remoteRef.current.srcObject.getTracks().forEach(t => t.stop());
+      remoteRef.current.srcObject = null;
+
     }
 
     if (remoteRefTemp.current && recvTransportRef.current.connectionState === 'connected') {
