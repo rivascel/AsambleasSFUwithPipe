@@ -392,16 +392,22 @@ export default (httpServer) => {
                 kind,
                 rtpParameters,
                 appData: { peerId: socket.id, },
-                role
+                
                 });
 
+                console.log("ANTES push:",peer.producers.length);
+
                 peer.producers.push(producer);
+                peer.role = role; // Guardar el rol del peer
                 // room.activeProducerId = socket.id;
+
+                console.log("DESPUES push:",peer.producers.length
+);
 
                 
                 // REGISTRO GLOBAL
-                registerProducer({ producer, roomId: socket.roomId, peerId: socket.id, routerId: peer.routerId, workerId: peer.workerId });
-
+                registerProducer({ producer, roomId: socket.roomId, peerId: socket.id, routerId: peer.routerId, 
+                                    workerId: peer.workerId, role: peer.role });
                 console.log("🎥 Producer creado:", producer.id);
 
                 callback({ id: producer.id });
@@ -412,7 +418,7 @@ export default (httpServer) => {
                     producerSocketId: socket.id, // 👈 Socket ID del productor
                     // peerId: socket.id,
                     kind: producer.kind,
-                    role: producer.role
+                    role
                 });
                 console.log("📢 Emitiendo a:", peer.roomId);
 
@@ -423,7 +429,7 @@ export default (httpServer) => {
                     producer.id
                 });
                 });
-                
+
             } catch (error) {
                 console.error("❌ Error en produce:", error);
                 callback?.({ error: error.message });
@@ -432,6 +438,7 @@ export default (httpServer) => {
 
         // 🔹 Obtener productores existentes (para usuarios que entran tarde)
         socket.on("getProducers", (data, callback) => {
+              console.log("📥 getProducers recibido", data);
             const { roomId } = data; //extraemos roomId del objeto data
 
             try {
@@ -439,24 +446,29 @@ export default (httpServer) => {
             if (!room) return callback?.([]);
 
             const producers = Array.from(room.peers.values())
-              .flatMap(peer => peer.producers.map(
-                  producer => ({
-                    producerId: producer.id,
-                    peerId: peer.id,
-                    kind: producer.kind
-                  })
-                )
-            );
+                .flatMap(peer => {
+                    console.log("👤 Peer:", peer.id,
+                    "role:", peer.role,
+                    "producers:", peer.producers.length);
+
+                    return peer.producers.map(producer => ({
+                        producerId: producer.id,
+                        peerId: peer.id,
+                        kind: producer.kind,
+                        role: peer.role
+                    }));
+                });
             callback(producers);
-        } catch (err) {
 
-          console.error(
-            "❌ getProducers",
-            err
-          );
+            } catch (err) {
 
-          callback([]);
-        }
+            console.error(
+                "❌ getProducers",
+                err
+            );
+
+            callback([]);
+            }
         });
 
         // 🔹 Consumir (Recibir stream del SFU)
@@ -504,8 +516,9 @@ export default (httpServer) => {
                     kind: consumer.kind, 
                     rtpParameters: consumer.rtpParameters,
                     role
+                    
                 });
-
+                
                 consumer.on("close", () => { consumerPeer.consumers = consumerPeer.consumers.filter(c => c.id !== consumer.id);});
 
             } 

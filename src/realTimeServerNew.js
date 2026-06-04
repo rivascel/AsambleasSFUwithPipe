@@ -193,8 +193,7 @@ export default (httpServer) => {
        CONNECT TRANSPORT
     ========================================================= */
 
-    socket.on(
-      "connectTransport",
+    socket.on("connectTransport",
       async (
         {
           transportId,
@@ -313,8 +312,7 @@ export default (httpServer) => {
        GET PRODUCERS
     ========================================================= */
 
-    socket.on(
-      "getProducers",
+    socket.on("getProducers",
       (_, callback) => {
 
         try {
@@ -365,23 +363,21 @@ export default (httpServer) => {
        CONSUME
     ========================================================= */
 
-    socket.on(
-      "consume",
+    socket.on("consume",
       async (
         {
           producerId,
-          rtpCapabilities
+          rtpCapabilities,
+          roomId,
+          role
         },
+
         callback
       ) => {
-
+                
         try {
 
-          const peer =
-            getPeer(
-              socket.roomId,
-              socket.id
-            );
+          const peer = getPeer(socket.roomId, socket.id);
 
           if (!peer) {
             throw new Error(

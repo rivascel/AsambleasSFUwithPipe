@@ -29,6 +29,7 @@ const VideoGeneral = () => {
 
   const producersRef = useRef([]);
   const consumersRef = useRef([]);
+  const roleRef = useRef("admin");
 
   const initializedRef = useRef(false); // 🔥 evita doble ejecución (React Strict)
   const rtpCapabilitiesRef = useRef(null);

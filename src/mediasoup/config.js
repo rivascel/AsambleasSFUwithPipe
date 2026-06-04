@@ -48,6 +48,12 @@ export const configuration = {
           // announcedIp: '127.0.0.1',
           // announcedIp: undefined, // Si no tienes IP pública o estás detrás de NAT, deja esto como undefined
         },
+                {
+          protocol: "tcp",
+          ip: config.ip, // Escucha en todas las interfaces de red
+          announcedIp: config.announcedIp, // luego pones tu IP pública
+
+        }
         
       ],
       initialAvailableOutgoingBitrate: 1000000,

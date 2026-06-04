@@ -168,7 +168,8 @@ export async function addPeerToRoom(roomId,  socketId,  isBroadcaster = false) {
     producers: [],
     consumers: [],
     rtpCapabilities: null,
-    isBroadcaster
+    isBroadcaster,
+    role: "valor por defecto"
   };
 
   room.peers.set(socketId, peer);
@@ -190,9 +191,9 @@ export function getPeer(roomId, socketId) {
    PRODUCERS
 ========================================================= */
 
-export function registerProducer({ producer,  roomId,  peerId,  routerId,  workerId }) {
+export function registerProducer({ producer,  roomId,  peerId,  routerId,  workerId, role }) {
 
-  globalProducers.set(producer.id, { producer, roomId, peerId, routerId, workerId });
+  globalProducers.set(producer.id, { producer, roomId, peerId, routerId, workerId, role });
 
   console.log(`🎥 Producer registrado ${producer.id}`);
 }

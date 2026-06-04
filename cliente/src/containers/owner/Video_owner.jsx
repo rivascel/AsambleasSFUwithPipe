@@ -37,6 +37,7 @@ const VideoGeneral = () => {
 
   const producersRef = useRef(new Map()); // producerId -> { socketId, kind }
   const consumersRef = useRef([]);
+  const roleRef = useRef("owner"); // Guardar el rol actual
 
   const initializedRef = useRef(false); // 🔥 evita doble ejecución (React Strict)
   const rtpCapabilitiesRef = useRef(null);
@@ -149,7 +150,7 @@ const VideoGeneral = () => {
 
   const stopProducing = async () => {
     // cerrar producers
-    producersRef.current.forEach(p => p.close());
+    // producersRef.current.forEach(p => p.close());
     producersRef.current.clear();
 
     // cerrar transport
@@ -220,7 +221,6 @@ const VideoGeneral = () => {
                 kind,
                 rtpParameters,
                 roomId,
-                userId,
                 role: "owner",
               },
               ({ id }) => callback({ id })
@@ -342,25 +342,28 @@ const VideoGeneral = () => {
       console.log("📡 Solicitando productores existentes para la sala", roomId);
     });
 
+     console.log("📡 respuesta getProducers", producers);
+
     if (producers === null || producers.length === 0) {
       console.log("📡 No hay productores disponibles");
       return;
     }
 
-    for (const { producerId, kind, role } of producers) {
+    for (const { producerId, kind, roleRef } of producers) {
+      console.log("📡 Productor existente:", producerId, "Tipo:", kind, "Rol:", roleRef.current);
 
       if (producersRef.current.has(producerId)) continue; 
 
-        producersRef.current.set(producerId, { kind, role });
-        console.log(`📡 Consumiendo ${kind}:`, producerId);
-        await consume({ producerId, role, kind }); 
+      producersRef.current.set(producerId, { kind, role: roleRef.current });
+      console.log(`📡 Consumiendo ${kind}:`, producerId);
+      await consume({ producerId, roleRef, kind }); 
       
     }
     setState("CONSUMING_EXISTING");
   };
 
   // 🎥 consume
-  const consume = async ({producerId, role, kind}) => {
+  const consume = async ({producerId, kind, role}) => {
 
     try {
       const data = await new Promise((resolve, reject) => {
@@ -369,10 +372,9 @@ const VideoGeneral = () => {
             producerId,
             rtpCapabilities: deviceRef.current.rtpCapabilities,
             roomId,
-            role,
+            role
           },
           (response) => {
-
             if (response?.error) {
               reject(new Error(response.error));
             } else {
@@ -391,8 +393,11 @@ const VideoGeneral = () => {
         error
       );
     }
-    
   };
+    //data que recibe // id: consumer.id, 
+    //                 producerId, 
+    //                 kind: consumer.kind, 
+    //                 rtpParameters: consumer.rtpParameters,
 
   // Función auxiliar para crear y configurar el consumer
   const createAndSetupConsumer = async (consumerData) => {
@@ -420,7 +425,7 @@ const VideoGeneral = () => {
     console.log(`🎥 Consumer creado (${consumerData.isPipe ? 'vía pipe' : 'directo'})`);
     console.log("🎥 kind:", consumerData.kind);
     console.log("🎥 track:", consumer.track.kind);
-    console.log("🎥 kind:", consumerData.role);
+    console.log("🎥 role:", consumerData.role);
 
     // Resumir el consumer
     await new Promise((resolve) => {
@@ -430,8 +435,10 @@ const VideoGeneral = () => {
 
     consumersRef.current.push(consumer);
 
+    consumer.producerRole = consumerData.role;
+
     // Manejar el stream remoto
-    if (consumer.role === "owner") {
+    if (consumer.produceRole === "admin") {
       if (!remoteRefTemp.current.srcObject) {
       remoteRefTemp.current.srcObject = new MediaStream();
       } else {
@@ -496,6 +503,10 @@ const VideoGeneral = () => {
           console.error("Error real de reproducción:", err);
         }
       }
+    } else {
+      remoteRefTemp.current.srcObject.getTracks().forEach(t => t.stop());
+      remoteRefTemp.current.srcObject = null;
+
     }
 
     console.log(`✅ Track de ${consumerData.kind} actualizado. Total tracks:`, stream.getTracks().length);
@@ -546,7 +557,7 @@ const VideoGeneral = () => {
 
       producersRef.current.set(producerId, { socketId: producerSocketId, kind });
 
-      if (producerId) await consume({ producerId, role });
+      if (producerId) await consume({ producerId, kind, role });
     });
 
     return () => {
