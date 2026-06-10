@@ -44,6 +44,7 @@ const VideoGeneral = () => {
   const myRouterIdRef = useRef(null); // Guardar mi router asignado
   const producerRouterIdRef=useRef(null);;
   const consumerRouterIdsRef=useRef(null);
+  const pendingProducersRef=useRef(new Map()); // producerId -> { socketId, kind, role }
 
   const [peers, setPeers] = useState([]);
 
@@ -78,11 +79,17 @@ const VideoGeneral = () => {
           
           if (approver.status === 'approved') {
             // console.log("Viewer aprobado via listener:", approver.user_id);
-            if (!viewerReady) setViewerReady(true);
+            if (!viewerReady) { 
+              setViewerReady(true);
+              setStream(true);
+            }
           }
           if (approver.status === null || approver.status === undefined) {
             // console.log("Viewer aprobado via listener:", approver.user_id);
-            if (viewerReady) setViewerReady(false);
+            if (viewerReady) {
+              setViewerReady(false);
+              setStream(false);
+            }
           }
         });
 
@@ -112,31 +119,17 @@ const VideoGeneral = () => {
 
   // 3. INIT FLOW (el corazón)
   const initFlow = async () => {
-    // Escuchar lista de peers existentes
-    // socketRef.current.on("existing-peers", ({ peers: existingPeers, userRouterMap }) => {
-    //   // Inicializar mapa de routers con usuarios existentes
-    //   Object.entries(userRouterMap).forEach(([userId, routerId]) => {
-    //     userRoutersMap.set(userId, routerId);
-    //   });
-    //   setPeers(existingPeers);
-    // });
 
     await joinRoom();
     
-    // Escuchar nuevos peers
-    // socketRef.current.on("peer-joined", ({ peerId, userId, routerId }) => {
-    //   userRoutersMap.set(userId, routerId);
-    //   setPeers(prev => [...prev, { id: peerId, userId, routerId }]);
-    // });
-
     await loadDevice();
     
     await setupConsumerFlow();
 
-    return () => {
-      socketRef.current.off("existing-peers");
-      socketRef.current.off("peer-joined");
-    };
+    // return () => {
+    //   socketRef.current.off("existing-peers");
+    //   socketRef.current.off("peer-joined");
+    // };
   };
 
   const startProducing = async () => {
@@ -180,17 +173,17 @@ const VideoGeneral = () => {
         myRouterIdRef.current = data.routerId; // Guardar mi router asignado
 
         console.log("✅ Unido a la sala", roomId, "Router asignado:", data.routerId);
-
+        setState("JOINED");
         resolve();
       });
     });
-    setState("JOINED");
+    
   };
 
   // 5. loadDevice
   const loadDevice = async () => {
     const device = new mediasoupClient.Device();
-    iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+    // iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
 
     await device.load({ routerRtpCapabilities: rtpCapabilitiesRef.current  });
 
@@ -200,40 +193,101 @@ const VideoGeneral = () => {
 
   // createSendTransport
   const createSendTransport = () => {
-    return new Promise((resolve) => {
-      socketRef.current.emit("createTransport", { consumer: false, roomId },
-        (params) => {
+    return new Promise((resolve, reject) => {
+      socketRef.current.emit(
+        "createTransport", { consumer: false, roomId }, (params) => 
+        {
+          // Verificar que params tiene los datos necesarios
+          if (!params.iceParameters || !params.iceCandidates || !params.dtlsParameters) {
+            console.error("❌ Params incompletos:", params);
+            reject(new Error("Missing required transport parameters"));
+            return;
+          }
+
           const transport = deviceRef.current.createSendTransport(params);
 
-          transport.on("connect", ({ dtlsParameters }, callback) => {
+          sendTransportRef.current = transport;
+
+          transport.on("connect", ({ dtlsParameters }, callback, errback) => {
+             console.log("🔌 SendTransport conectando...");
+
             socketRef.current.emit(
               "connectTransport",
-              { transportId: transport.id, dtlsParameters, roomId },
-              callback
+              { transportId: transport.id, dtlsParameters, roomId }, ({ error }) => {
+                  if (error) {
+                    console.error("❌ Error conectando transport:", error);
+                    errback(error);
+                  } else {
+                    console.log(
+                      "✅ sendTransport DTLS conectado" 
+                    );
+                    callback();
+                  }
+                }
             );
           });
 
-          transport.on("produce", ({ kind, rtpParameters }, callback) => {
+          transport.on("produce", async ({ kind, rtpParameters }, callback, errback) => {
+            
+            console.log("📡 produce event:", kind);
 
-            socketRef.current.emit("produce",
-              {
+            try {
+              const { id } = await emitPromise("produce", {
                 transportId: transport.id,
                 kind,
                 rtpParameters,
                 roomId,
-                role: "owner",
-              },
-              ({ id }) => callback({ id })
-            );
+                role: "admin"
+              });
+              
+              callback({ id }); 
+              console.log("✅ Produce exitoso", id);
+            } catch (error) {
+              console.error("❌ Error en produce:", error);
+              errback(error);
+            }
+            
+          });
+
+          // Manejar cambios de estado
+
+          // Monitoreo de estados
+          transport.on("connectionstatechange", (state) => {
+            console.log(`📡 5. connectionstatechange: ${state}`);
+            
+            if (state === "connected") {
+              console.log("✅ 6. Transport CONECTADO - Resolviendo promesa!");
+              setState("SEND_TRANSPORT_READY");
+              // resolve();
+            }
+            
+            if (state === "failed" || state === "closed" || state === "disconnected") {
+              console.error(`❌ Transport ${state}`);
+              reject(new Error(`Transport ${state}`));
+            }
           });
 
           sendTransportRef.current = transport;
+
           resolve();
+          
         }
       );
-      setState("SEND_TRANSPORT_READY");
     });
   };
+
+  const emitPromise = (event, data) => {
+    return new Promise((resolve, reject) => {
+      socketRef.current.emit(event, data, (response) => {
+        if (response && response.error) {
+          reject(response.error);
+        } else {
+          resolve(response);
+        }
+        });
+    });
+  };
+
 
   // produce (clave)
   const produce = async () => {
@@ -258,11 +312,12 @@ const VideoGeneral = () => {
           peerId: socketRef.current.id,            // Metadata adicional
         } 
       });
-      producersRef.current.push(producer);
+      producersRef.current.set(producer, {socketId: socketRef.current.id, kind: track.kind });
     }
 
     console.log("🎥 Produciendo...");
     setState("PRODUCING");
+    setIsAllowed(true);
   };
 
   // 7. FLUJO VIEWER
@@ -288,40 +343,36 @@ const VideoGeneral = () => {
           let isConnecting = false;
 
           transport.on("connect", ({ dtlsParameters }, callback, errback) => {
-              console.log("📡 inicia connect recvTransport");
+            console.log("📡 inicia connect recvTransport");
 
-              socketRef.current.emit("connectTransport",
-                { transportId: transport.id, dtlsParameters, roomId }, ({ error }) => {
+            socketRef.current.emit("connectTransport",
+              { transportId: transport.id, dtlsParameters, roomId }, ({ error }) => {
 
-                  if (error) {
-                    console.error("❌ Error en connectTransport:", error);
-                    isConnecting = false; // Resetear para permitir reintento si falla
-                    return errback(error);
-                  }
-                  console.log("✅ recvTransport DTLS conectado");
-                  callback();
-                  // No reseteamos isConnecting a false porque ya está conectado permanentemente
-                  } 
-                  
-              );
-            }
-          );
+                if (error) {
+                  console.error("❌ Error en connectTransport:", error);
+                  isConnecting = false; // Resetear para permitir reintento si falla
+                  return errback(error);
+                }
+                console.log("✅ recvTransport DTLS conectado");
+                callback();
+                // No reseteamos isConnecting a false porque ya está conectado permanentemente
+              } 
+            );
+          });
 
           transport.on("connectionstatechange",(state) => {
 
-              console.log("📡 recvTransport state:", state);
+            console.log("📡 recvTransport state:", state);
 
-                 if (state === "connected") {
-                  console.log("✅ 6. Transport CONECTADO - Resolviendo promesa!");
-                    setState("RECV_TRANSPORT_READY");
-                  }
-
-                  if (state === "failed" || state === "closed" || state === "disconnected") {
-                    console.error(`❌ Transport ${state}`);
-                    reject(new Error(`Transport ${state}`));
-                  }
+            if (state === "connected") {
+              console.log("✅ 6. Transport CONECTADO - Resolviendo promesa!");
+              setState("RECV_TRANSPORT_READY");
             }
-          );
+            if (state === "failed" || state === "closed" || state === "disconnected") {
+              console.error(`❌ Transport ${state}`);
+              reject(new Error(`Transport ${state}`));
+            }
+            });
 
             // ✅ GUARDAR transport YA
               // recvTransportRef.current = transport;
@@ -329,7 +380,7 @@ const VideoGeneral = () => {
 
             // ✅ RESOLVER YA
             // resolve();
-            resolve(transport);
+          resolve(transport);
         }
       );
     });
@@ -349,14 +400,17 @@ const VideoGeneral = () => {
       return;
     }
 
-    for (const { producerId, kind, roleRef } of producers) {
-      console.log("📡 Productor existente:", producerId, "Tipo:", kind, "Rol:", roleRef.current);
+    console.log("producers:", producers);
+
+    for (const { producerId, kind, role } of producers) {
+        console.log("producer:", producers);
 
       if (producersRef.current.has(producerId)) continue; 
 
-      producersRef.current.set(producerId, { kind, role: roleRef.current });
+      producersRef.current.set(producerId, { kind, role: role });
+
       console.log(`📡 Consumiendo ${kind}:`, producerId);
-      await consume({ producerId, roleRef, kind }); 
+      await consume({ producerId, kind, role: role }); 
       
     }
     setState("CONSUMING_EXISTING");
@@ -394,10 +448,6 @@ const VideoGeneral = () => {
       );
     }
   };
-    //data que recibe // id: consumer.id, 
-    //                 producerId, 
-    //                 kind: consumer.kind, 
-    //                 rtpParameters: consumer.rtpParameters,
 
   // Función auxiliar para crear y configurar el consumer
   const createAndSetupConsumer = async (consumerData) => {
@@ -437,46 +487,42 @@ const VideoGeneral = () => {
 
     consumer.producerRole = consumerData.role;
 
-    // Manejar el stream remoto
-    if (consumer.produceRole === "admin") {
-      if (!remoteRefTemp.current.srcObject) {
-      remoteRefTemp.current.srcObject = new MediaStream();
-      } else {
-        if (!remoteRef.current.srcObject) {
-        remoteRef.current.srcObject = new MediaStream();
-        }
-      }
+    const targetVideo = consumer.producerRole === "admin" ? remoteRef.current : remoteRefTemp.current;
+
+    if (!targetVideo.srcObject) {
+      targetVideo.srcObject = new MediaStream();
     }
 
-    // Manejar el stream remoto
-    // if (!remoteRef.current.srcObject) {
-    //   remoteRef.current.srcObject = new MediaStream();
-    // }
-    // const stream = remoteRef.current.srcObject;
-
-    const stream = remoteRef.current.srcObject ? remoteRef.current.srcObject : remoteRefTemp.current.srcObject;
+    const stream = targetVideo.srcObject;
     
     // Eliminar tracks antiguos del mismo tipo
     const existingTracks = stream.getTracks().filter(t => t.kind === consumerData.kind);
     
     existingTracks.forEach(track => { stream.removeTrack(track); });
 
+
     // Agregar el nuevo track
-    consumersRef.current.forEach(consumer => {
-      if (!stream.getTracks().find(t => t.id === consumer.track.id)) { stream.addTrack(consumer.track); }
-    });
+    consumersRef.current
+      .filter(c => c.producerRole === consumer.producerRole)
+      .forEach(consumer => {
+        if (!stream.getTracks().find(t => t.id === consumer.track.id)) {
+          stream.addTrack(consumer.track);
+        }
+      });
+
+    // stream.addTrack(consumer.track);
 
     // Configurar y reproducir el remote cuando recibe del producto admin
-    if (remoteRef.current && recvTransportRef.current.connectionState === 'connected') {
+    if (targetVideo && recvTransportRef.current.connectionState === 'connected') {
       try {
-        remoteRef.current.muted = true;
-        remoteRef.current.playsInline = true;
+        targetVideo.muted = true;
+        targetVideo.playsInline = true;
 
-        if (remoteRef.current.srcObject !== stream) {
-          remoteRef.current.srcObject = stream;
+        if (targetVideo.srcObject !== stream) {
+          targetVideo.srcObject = stream;
         }
-        
-        await remoteRef.current.play();
+
+        await targetVideo.play();
         console.log("▶️ Reproducción iniciada con éxito para admin");
         
       } catch (err) {
@@ -485,31 +531,9 @@ const VideoGeneral = () => {
         }
       }
     } else {
-      remoteRef.current.srcObject.getTracks().forEach(t => t.stop());
-      remoteRef.current.srcObject = null;
+      // remoteRef.current.srcObject.getTracks().forEach(t => t.stop());
 
-    }
-
-    if (remoteRefTemp.current && recvTransportRef.current.connectionState === 'connected') {
-      try {
-        remoteRefTemp.current.muted = true;
-        remoteRefTemp.current.playsInline = true;
-
-        if (remoteRefTemp.current.srcObject !== stream) {
-          remoteRefTemp.current.srcObject = stream;
-        }
-        
-        await remoteRefTemp.current.play();
-        console.log("▶️ Reproducción iniciada con éxito para intervención");
-        
-      } catch (err) {
-        if (err.name !== 'AbortError') {
-          console.error("Error real de reproducción:", err);
-        }
-      }
-    } else {
-      remoteRefTemp.current.srcObject.getTracks().forEach(t => t.stop());
-      remoteRefTemp.current.srcObject = null;
+      targetVideo.srcObject = null;
 
     }
 
@@ -518,55 +542,59 @@ const VideoGeneral = () => {
     return consumer;
   };
 
-
-  // const attachStreamToRef = async ({ ref, stream, label }) => {
-  //     if (!ref.current) return;
-
-  //     if (recvTransportRef.current.connectionState !== 'connected') {
-  //       console.warn(`⚠️ No se puede reproducir ${label} porque el transport no está conectado`);
-  //       return;
-  //     }
-      
-  //     try {
-  //       ref.current.muted = true;
-  //       ref.current.playsInline = true;
-
-  //       if (ref.current.srcObject !== stream) {
-  //         ref.current.srcObject = stream;
-  //       }
-
-  //       await ref.current.play();
-  //       console.log("▶️ Reproducción iniciada con éxito para intervención");
-    
-  //     }
-  //     catch (err) {
-  //       if (err.name !== "AbortError") {
-  //         console.error(`Error reproduciendo ${label}:`, err);
-  //       }
-  //     }  
-  // };
-
-
   // 🔴 nuevos producers en tiempo real
   
   const listenForNewProducers = () => {
     socketRef.current.on("new-producer", async ({ producerId, producerSocketId, kind, role }) => {
       console.log("🆕 Nuevo producer:", producerId);
 
-      console.log("producersRef:", producersRef.current);
-      // console.log("es Map?", producersRef.current instanceof Map);
-      // console.log("constructor:", producersRef.current?.constructor?.name);
-       
+      const producerData = { id: producerId, socketId: producerSocketId, kind, role };
+      
+      // pendingProducersRef.current.set(producerData);
+
       if (producersRef.current.has(producerId)) return;
 
       producersRef.current.set(producerId, { socketId: producerSocketId, kind });
+      console.log("producersRef:", producersRef);
 
-      if (producerId) await consume({ producerId, kind, role });
-    });
+      //=============
+      if (recvTransportRef.current?.connectionState === 'connected' && producerId) {
+        
+        await consume({ producerId, kind, role });
+        pendingProducersRef.current.clear();
+      } else {
+        // Si no está conectado, guardarlo para procesar después
+        console.log(`⏳ Transport no conectado, guardando producer ${producerId}, kind ${kind}, role ${role} `);
+        pendingProducersRef.current.set( producerId, {producerId, producerSocketId, kind, role } );
+        createConsumerWithRetry(producerId, kind, role );
+      };
+      //=============
 
-    return () => {
-      socketRef.current.off("new-producer");
-    };
+      // if (producerId) await consume({ producerId, kind, role });
+
+      return () => {
+        socketRef.current.off("new-producer");
+      };
+    })
+  };
+
+  const createConsumerWithRetry = async (producerId, kind, role, maxRetries = 5) => {
+    let retries = 0;
+    
+    while (retries < maxRetries) {
+      console.log("recvTransport state:", recvTransportRef.current?.connectionState);
+
+      if (recvTransportRef.current?.connectionState === 'connected') {
+        return await consume({ producerId, kind, role })
+      }
+      
+      console.log(`⏳ Esperando transport... intento ${retries + 1}/${maxRetries}`);
+      await new Promise(resolve => setTimeout(resolve, 500));
+      retries++;
+    }
+    
+    console.error(`❌ No se pudo crear consumer después de ${maxRetries} intentos`);
+    return null;
   };
 
   const updateConsumers = () => {
@@ -597,6 +625,7 @@ const VideoGeneral = () => {
     console.warn("⚠️ Dispositivo no cargado, no se puede iniciar flujo");
     return;
   }
+
   if (stream) {
       console.log("activando flujo de productor");
       startProducing();
@@ -634,6 +663,7 @@ const VideoGeneral = () => {
       });
     }
   }, []);
+  
 
 
   // Dentro de tu función consume o en un useEffect que escuche los consumers
@@ -664,7 +694,8 @@ const VideoGeneral = () => {
   const openBroadcasting = async () => {
       try {
         // 1. Obtener stream local
-        setStream(true); //Inicia useEffect para generar proceso de streaming
+        // setStream(true); //Inicia useEffect para generar proceso de streaming
+        setIsAllowed(true);
         setIsBroadcasting(true);
 
       } catch (error) {
@@ -675,6 +706,7 @@ const VideoGeneral = () => {
   const hangUpBroadcasting = async () => {
     try {
       setStream(false);
+      setIsAllowed(false);
       setIsBroadcasting(false);
     } catch (error) {
       console.error("Error al colgar llamada:", error);
@@ -714,9 +746,9 @@ const VideoGeneral = () => {
 
 
         <h2 className="text-xl font-semibold mb-2">Intervención del copropietario</h2>
-        {viewerReady ? (
+        {viewerReady && stream ? (
           <>
-            <video ref={remoteRef} autoPlay playsInline className="w-full rounded border"></video>
+            <video ref={localRef} autoPlay playsInline className="w-full rounded border"></video>
 
             <div className="controls">
               {!isAllowed ? (
@@ -737,9 +769,9 @@ const VideoGeneral = () => {
               }
             </div>
           </>
-        ):(
-          <p>No hay petición de intervención</p>
-        )
+          ):(
+            <p>No hay petición de intervención</p>
+          )
 
         }
 

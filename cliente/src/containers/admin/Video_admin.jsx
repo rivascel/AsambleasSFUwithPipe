@@ -27,9 +27,11 @@ const VideoGeneral = () => {
   const sendTransportRef = useRef(null);
   const recvTransportRef = useRef(null);
 
-  const producersRef = useRef([]);
+  const producersRef = useRef(new Map());
   const consumersRef = useRef([]);
   const roleRef = useRef("admin");
+  const pendingProducersRef=useRef(new Map()); // producerId -> { socketId, kind, role }
+  
 
   const initializedRef = useRef(false); // 🔥 evita doble ejecución (React Strict)
   const rtpCapabilitiesRef = useRef(null);
@@ -100,8 +102,8 @@ const VideoGeneral = () => {
 
   const stopProducing = async () => {
     // cerrar producers
-    producersRef.current.forEach(p => p.close());
-    producersRef.current = [];
+    // producersRef.current.forEach(p => p.close());
+    producersRef.current.clear();
 
     // cerrar transport
     if (sendTransportRef.current) {
@@ -134,9 +136,7 @@ const VideoGeneral = () => {
   const loadDevice = async () => {
     const device = new mediasoupClient.Device();
 
-    await device.load({
-      routerRtpCapabilities: rtpCapabilitiesRef.current,
-    });
+    await device.load({ routerRtpCapabilities: rtpCapabilitiesRef.current  });
 
     deviceRef.current = device;
     setState("DEVICE_LOADED");
@@ -181,7 +181,6 @@ const VideoGeneral = () => {
           transport.on("produce", async ({ kind, rtpParameters }, callback, errback) => {
             
             console.log("📡 produce event:", kind);
-
 
             try {
               const { id } = await emitPromise("produce", {
@@ -263,7 +262,7 @@ const VideoGeneral = () => {
           peerId: socketRef.current.id,            // Metadata adicional
         } 
       });
-      producersRef.current.push(producer);
+       producersRef.current.set(producer, {socketId: socketRef.current.id, kind: track.kind });
     }
 
     console.log("🎥 Produciendo...");
@@ -280,48 +279,58 @@ const VideoGeneral = () => {
 
   // createRecvTransport
   const createRecvTransport = () => {
-    return new Promise((resolve) => {
-      socketRef.current.emit(
-        "createTransport",
-        { consumer: true, roomId, email}, // 🔥 CLAVE
+
+    return new Promise((resolve, reject) => {
+      socketRef.current.emit("createTransport", { consumer: true, roomId, email },
+
         (params) => {
-          const transport = deviceRef.current.createRecvTransport(params);
+
+          const transport =  deviceRef.current.createRecvTransport(params);
+          recvTransportRef.current = transport;
+
 
           transport.on("connect", ({ dtlsParameters }, callback, errback) => {
-            socketRef.current.emit(
-              "connectTransport",
-              { transportId: transport.id, dtlsParameters, roomId },
-              ({ error }) => {
+            console.log("📡 inicia connect recvTransport");
+
+            socketRef.current.emit("connectTransport", { transportId: transport.id, dtlsParameters, roomId }, ({ error }) => {
+
                 if (error) {
-                  errback(error);
-                } else {
-                  callback();
+                  console.error("❌ Error en connectTransport:", error);
+                  isConnecting = false; // Resetear para permitir reintento si falla
+                  return errback(error);
                 }
-              }
+                console.log("✅ recvTransport DTLS conectado");
+
+                callback();
+                // No reseteamos isConnecting a false porque ya está conectado permanentemente
+              } 
             );
           });
 
-          transport.on("connectionstatechange", (state) => {
+          transport.on("connectionstatechange",(state) => {
 
-              console.log(
-                "📡 sendTransport state:", state);
+            console.log("📡 recvTransport state:", state);
 
-                 if (state === "connected") {
-                    setState("RECV_TRANSPORT_READY");
-                  }
-
-                  if (state === "failed") {
-                    console.error("❌ Transport failed");
-                  }
-              
+            if (state === "connected") {
+              console.log("✅ 6. Transport CONECTADO - Resolviendo promesa!");
+              setState("RECV_TRANSPORT_READY");
             }
-          );
 
-          recvTransportRef.current = transport;
-          resolve();
+            if (state === "failed" || state === "closed" || state === "disconnected") {
+              console.error(`❌ Transport ${state}`);
+              reject(new Error(`Transport ${state}`));
+            }
+          });
+
+            // ✅ GUARDAR transport YA
+              // recvTransportRef.current = transport;
+
+
+            // ✅ RESOLVER YA
+            // resolve();
+          resolve(transport);
         }
       );
-      
     });
   };
 
@@ -332,118 +341,307 @@ const VideoGeneral = () => {
       console.log("📡 Solicitando productores existentes para la sala", roomId);
     });
 
+     console.log("📡 respuesta getProducers", producers);
+
     if (producers === null || producers.length === 0) {
       console.log("📡 No hay productores disponibles");
       return;
     }
 
-    for (const producerId of producers) {
-      console.log("📡 Producers disponibles:", producers);
-      await consume(producerId);
+    console.log("producers:", producers);
+
+    for (const { producerId, kind, role } of producers) {
+        console.log("producer:", producers);
+
+      if (producersRef.current.has(producerId)) continue; 
+
+      producersRef.current.set(producerId, { kind, role: role });
+
+      console.log(`📡 Consumiendo ${kind}:`, producerId);
+      await consume({ producerId, kind, role: role }); 
+      
     }
-    
     setState("CONSUMING_EXISTING");
   };
 
   // 🎥 consume
-    const consume = async (producerId) => {
-      const data = await new Promise((resolve) => {
-        socketRef.current.emit(
-          "consume",
-          {
+    // const consume = async ({producerId, kind, role}) => {
+    //   const data = await new Promise((resolve) => {
+    //     socketRef.current.emit(
+    //       "consume",
+    //       {
+    //         producerId,
+    //         rtpCapabilities: deviceRef.current.rtpCapabilities,
+    //         roomId,
+    //         email
+    //       },
+    //       resolve
+    //     );
+    //   });
+
+    //   if (!data) {
+    //     console.warn("❌ Productor no encontrado:", producerId);
+    //     return;
+    //   }
+
+    //   console.log("📦 Datos recibidos:", data);
+      
+    //   const consumer = await recvTransportRef.current.consume({
+    //     id: data.id,
+    //     producerId: data.producerId,
+    //     kind: data.kind,
+    //     rtpParameters: data.rtpParameters,
+    //   });
+
+    //   console.log("🎥 Consumer creado frontend");
+    //   console.log("🎥 kind:", data.kind);
+    //   console.log("🎥 track:", consumer.track.kind);
+
+
+    //   await new Promise((resolve)=>{
+    //     socketRef.current.emit("resume-consumer", 
+    //       { consumerId: consumer.id }, resolve );
+    //   })
+
+    //   consumersRef.current.push(consumer);
+
+    //   // 🔥 1. Asegurar que tenemos un MediaStream limpio
+    //   if (!remoteRef.current.srcObject) {
+    //       remoteRef.current.srcObject = new MediaStream();
+    //   }
+
+    //   const stream = remoteRef.current.srcObject;
+
+    //   // 🔥 2. ELIMINAR tracks antiguos del mismo tipo para evitar el acumulado (el Array(4) que viste)
+    //   const existingTracks = stream.getTracks().filter(t => t.kind === data.kind);
+    //   existingTracks.forEach(track => {
+    //       track.stop(); // Detener el hardware
+    //       stream.removeTrack(track); // Quitar del stream
+    //   });
+
+    //   // 🔥 3. Agregar el nuevo track limpio
+
+    //   consumersRef.current.forEach(consumer => {
+    //     if (!stream.getTracks().find(t => t.id === consumer.track.id)) {
+    //       stream.addTrack(consumer.track);
+    //     }
+    //   });
+
+    //   // ... después de stream.addTrack(consumer.track)
+    //   if (remoteRef.current) {
+    //       // Forzar que el elemento reconozca el nuevo stream
+    //       remoteRef.current.srcObject = stream;
+          
+    //       // IMPORTANTE: Algunos navegadores necesitan esto para despertar el renderizado
+    //       remoteRef.current.load(); 
+
+    //       remoteRef.current.play()
+    //           .then(() => console.log("▶️ Reproducción iniciada con éxito"))
+    //           .catch(err => {
+    //               console.error("❌ Error en play():", err);
+    //               // Si falla, intentamos mutearlo de nuevo por si es política de autoplay
+    //               remoteRef.current.muted = true;
+    //               remoteRef.current.play();
+    //           });
+    //   }
+
+    //   console.log(`✅ Track de ${data.kind} actualizado. Total tracks:`, stream.getTracks().length);
+
+    //   // 🔥 4. Forzar visibilidad y reproducción
+    //   remoteRef.current.muted = true; // Obligatorio para video autoplay
+    //   remoteRef.current.playsInline = true;
+
+    //   remoteRef.current.play().catch(e => console.warn("Error play:", e));
+
+    // };
+
+
+    const consume = async ({producerId, kind, role}) => {
+
+    try {
+      const data = await new Promise((resolve, reject) => {
+
+        socketRef.current.emit("consume", {
             producerId,
             rtpCapabilities: deviceRef.current.rtpCapabilities,
             roomId,
-            email
+            role
           },
-          resolve
+          (response) => {
+            if (response?.error) {
+              reject(new Error(response.error));
+            } else {
+              resolve(response);
+            }
+          }
         );
       });
 
-      if (!data) {
-        console.warn("❌ Productor no encontrado:", producerId);
-        return;
-      }
+      await createAndSetupConsumer(data);
 
-      console.log("📦 Datos recibidos:", data);
-      
-      const consumer = await recvTransportRef.current.consume({
-        id: data.id,
-        producerId: data.producerId,
-        kind: data.kind,
-        rtpParameters: data.rtpParameters,
-      });
+    } catch (error) {
 
-      console.log("🎥 Consumer creado frontend");
-      console.log("🎥 kind:", data.kind);
-      console.log("🎥 track:", consumer.track.kind);
+      console.error(
+        "Error consumiendo:",
+        error
+      );
+    }
+  };
+
+  // Función auxiliar para crear y configurar el consumer
+  
+  const createAndSetupConsumer = async (consumerData) => {
+    // Limpiar consumer existente del mismo tipo
+    const existingConsumer = consumersRef.current.find(
+      c => c.kind === consumerData.kind
+    );
+
+    if (existingConsumer) {
+      existingConsumer.close();
+      consumersRef.current = consumersRef.current.filter(
+        c => c.id !== existingConsumer.id
+      );
+    }
+    
+    // Crear consumer con el transport (puede ser el mismo recvTransport)
+    const consumer = await recvTransportRef.current.consume({ 
+      id: consumerData.id,
+      producerId: consumerData.producerId,
+      kind: consumerData.kind,
+      rtpParameters: consumerData.rtpParameters,
+      role: consumerData.role,
+    });
+
+    console.log(`🎥 Consumer creado (${consumerData.isPipe ? 'vía pipe' : 'directo'})`);
+    console.log("🎥 kind:", consumerData.kind);
+    console.log("🎥 track:", consumer.track.kind);
+    console.log("🎥 role:", consumerData.role);
+
+    // Resumir el consumer
+    await new Promise((resolve) => {
+      socketRef.current.emit("resume-consumer", 
+        { consumerId: consumer.id }, resolve );
+    });
+
+    consumersRef.current.push(consumer);
+
+    consumer.producerRole = consumerData.role;
+
+    const targetVideo = consumer.producerRole === "admin" ? remoteRef.current : remoteRefTemp.current;
+
+    if (!targetVideo.srcObject) {
+      targetVideo.srcObject = new MediaStream();
+    }
+
+    const stream = targetVideo.srcObject;
+    
+    // Eliminar tracks antiguos del mismo tipo
+    const existingTracks = stream.getTracks().filter(t => t.kind === consumerData.kind);
+    
+    existingTracks.forEach(track => { stream.removeTrack(track); });
 
 
-      await new Promise((resolve)=>{
-        socketRef.current.emit("resume-consumer", 
-          { consumerId: consumer.id }, resolve );
-      })
-
-      consumersRef.current.push(consumer);
-
-      // 🔥 1. Asegurar que tenemos un MediaStream limpio
-      if (!remoteRef.current.srcObject) {
-          remoteRef.current.srcObject = new MediaStream();
-      }
-
-      const stream = remoteRef.current.srcObject;
-
-      // 🔥 2. ELIMINAR tracks antiguos del mismo tipo para evitar el acumulado (el Array(4) que viste)
-      const existingTracks = stream.getTracks().filter(t => t.kind === data.kind);
-      existingTracks.forEach(track => {
-          track.stop(); // Detener el hardware
-          stream.removeTrack(track); // Quitar del stream
-      });
-
-      // 🔥 3. Agregar el nuevo track limpio
-
-      consumersRef.current.forEach(consumer => {
+    // Agregar el nuevo track
+    consumersRef.current
+      .filter(c => c.producerRole === consumer.producerRole)
+      .forEach(consumer => {
         if (!stream.getTracks().find(t => t.id === consumer.track.id)) {
           stream.addTrack(consumer.track);
         }
       });
 
-      // ... después de stream.addTrack(consumer.track)
-      if (remoteRef.current) {
-          // Forzar que el elemento reconozca el nuevo stream
-          remoteRef.current.srcObject = stream;
-          
-          // IMPORTANTE: Algunos navegadores necesitan esto para despertar el renderizado
-          remoteRef.current.load(); 
+    // stream.addTrack(consumer.track);
 
-          remoteRef.current.play()
-              .then(() => console.log("▶️ Reproducción iniciada con éxito"))
-              .catch(err => {
-                  console.error("❌ Error en play():", err);
-                  // Si falla, intentamos mutearlo de nuevo por si es política de autoplay
-                  remoteRef.current.muted = true;
-                  remoteRef.current.play();
-              });
+    // Configurar y reproducir el remote cuando recibe del producto admin
+    if (targetVideo && recvTransportRef.current.connectionState === 'connected') {
+      try {
+        targetVideo.muted = true;
+        targetVideo.playsInline = true;
+
+        if (targetVideo.srcObject !== stream) {
+          targetVideo.srcObject = stream;
+        }
+
+        await targetVideo.play();
+        console.log("▶️ Reproducción iniciada con éxito para admin");
+        
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          console.error("Error real de reproducción:", err);
+        }
       }
+    } else {
+      // remoteRef.current.srcObject.getTracks().forEach(t => t.stop());
 
-      console.log(`✅ Track de ${data.kind} actualizado. Total tracks:`, stream.getTracks().length);
+      targetVideo.srcObject = null;
 
-      // 🔥 4. Forzar visibilidad y reproducción
-      remoteRef.current.muted = true; // Obligatorio para video autoplay
-      remoteRef.current.playsInline = true;
+    }
 
-      remoteRef.current.play().catch(e => console.warn("Error play:", e));
-
-    };
-
-  // 🔴 nuevos producers en tiempo real
-  const listenForNewProducers = () => {
-    socketRef.current.on("new-producer", async ({ producerId }) => {
-      console.log("🆕 Nuevo producer:", producerId);
-      await consume(producerId);
-    });
+    console.log(`✅ Track de ${consumerData.kind} actualizado. Total tracks:`, stream.getTracks().length);
+      
+    return consumer;
   };
 
+
+  // 🔴 nuevos producers en tiempo real
+  // const listenForNewProducers = () => {
+  //   socketRef.current.on("new-producer", async ({ producerId }) => {
+  //     console.log("🆕 Nuevo producer:", producerId);
+  //     await consume(producerId);
+  //   });
+  // };
+
+  const listenForNewProducers = () => {
+    socketRef.current.on("new-producer", async ({ producerId, producerSocketId, kind, role }) => {
+      console.log("🆕 Nuevo producer:", producerId);
+
+      const producerData = { id: producerId, socketId: producerSocketId, kind, role };
+      
+      // pendingProducersRef.current.set(producerData);
+
+      if (producersRef.current.has(producerId)) return;
+
+      producersRef.current.set(producerId, { socketId: producerSocketId, kind });
+      console.log("producersRef:", producersRef);
+
+      //=============
+      if (recvTransportRef.current?.connectionState === 'connected' && producerId) {
+        
+        await consume({ producerId, kind, role });
+        pendingProducersRef.current.clear();
+      } else {
+        // Si no está conectado, guardarlo para procesar después
+        console.log(`⏳ Transport no conectado, guardando producer ${producerId}, kind ${kind}, role ${role} `);
+        pendingProducersRef.current.set( producerId, {producerId, producerSocketId, kind, role } );
+        createConsumerWithRetry(producerId, kind, role );
+      };
+      //=============
+
+      return () => {
+        socketRef.current.off("new-producer");
+      };
+    })
+  };
+
+
+  const createConsumerWithRetry = async (producerId, kind, role, maxRetries = 5) => {
+    let retries = 0;
+    
+    while (retries < maxRetries) {
+      console.log("recvTransport state:", recvTransportRef.current?.connectionState);
+
+      if (recvTransportRef.current?.connectionState === 'connected') {
+        return await consume({ producerId, kind, role })
+      }
+      
+      console.log(`⏳ Esperando transport... intento ${retries + 1}/${maxRetries}`);
+      await new Promise(resolve => setTimeout(resolve, 500));
+      retries++;
+    }
+    
+    console.error(`❌ No se pudo crear consumer después de ${maxRetries} intentos`);
+    return null;
+  };
 
 const updateConsumers = () => {
   if (!consumersRef.current.length) return;

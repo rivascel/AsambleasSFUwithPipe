@@ -23,7 +23,7 @@ const RegisterAdmin = ({ onRegister }) => {
 
         // CREAR LA COOKIE EN EL FORMATO QUE EL BACKEND ENTIENDE
         const sessionData = JSON.stringify({
-            role: 'administrador',
+            role: 'admin',
             email: email
         });
         
