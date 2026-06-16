@@ -4,7 +4,9 @@ import AppContext from '../context/AppContext';
 
 export const UserContext = createContext(null);
 
-import { API_URL } from '../config/api'; // Impórtalo directamente
+// import { API_URL } from '../config/api'; // Impórtalo directamente
+
+const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_URL_LOCAL; 
 
 
 const UserProvider = ({ children }) => {
@@ -43,6 +45,7 @@ const UserProvider = ({ children }) => {
 
         // Verifica sesión en el backend (opcional, más seguro)
         // await checkBackendSession();
+
       } catch (error) {
         console.log("⚠️ Error verificando sesión:", error);
       } finally {
@@ -71,6 +74,9 @@ const UserProvider = ({ children }) => {
         withCredentials: true,
       });
 
+ 
+
+
       if (adminRes.data?.user === "administrador") {
         setIsAuthenticatedAdmin(true);
         localStorage.setItem("isAuthenticatedAdmin", "true");
@@ -81,6 +87,8 @@ const UserProvider = ({ children }) => {
       localStorage.removeItem("isAuthenticatedAdmin");
     }
   };
+
+
 
   const login = (email, role, data) => {
     setEmail(email);
@@ -93,6 +101,7 @@ const UserProvider = ({ children }) => {
       "ownerInfo",
       JSON.stringify({ email, ownerData: data, quorum }) // quorum puede agregarse después
     );
+    
   };
 
   // 🔐 Función para cerrar sesión

@@ -13,6 +13,9 @@ import AppContext from '../context/AppContext';
 
 // const socketRef = useRef(null);
 
+const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_URL_LOCAL; 
+const apiUrl = API_URL;
+
 const Section = ({ title, children }) => (
   <div className="bg-white p-4 rounded-lg shadow-md">
     <h2 className="text-xl font-semibold mb-2">{title}</h2>
@@ -21,7 +24,7 @@ const Section = ({ title, children }) => (
 );
 
 const DashBoardAdmin = () => {
-  const { apiUrl } = useContext(AppContext);
+  // const { apiUrl } = useContext(AppContext);
   // const [email, setEmail] = useState(null);
   const socketRef = useRef(null);
 
@@ -54,19 +57,20 @@ const DashBoardAdmin = () => {
   }, []);
 
   useEffect(() => {
-  if (!socketRef.current) return;
+    if (!socketRef.current) return;
 
-  const handleUpdateConnectedUsers = async (users) => {
-    // console.log("usuarios conectados para quorum:", users);
-    setConnectedUsers(users);
+    const handleUpdateConnectedUsers = async (users) => {
+      // console.log("usuarios conectados para quorum:", users);
+      setConnectedUsers(users);
 
-    const data = await fetchOwners();
-    if (data) {
-      setOwnerData(data);
-    }
-  };
+      const data = await fetchOwners();
+      if (data) {
+        setOwnerData(data);
+        // console.log("data",data)
+      }
+    };
 
-  socketRef.current.on("updateConnectedUsers", handleUpdateConnectedUsers);
+    socketRef.current.on("updateConnectedUsers", handleUpdateConnectedUsers);
 
   return () => {
     socketRef.current.off("updateConnectedUsers", handleUpdateConnectedUsers);
@@ -93,7 +97,7 @@ useEffect(() => {
         withCredentials: true,
       });
       if (Array.isArray(response.data)) {
-        // console.log("Ok datos propietarios para quorum");
+        console.log("Ok datos propietarios para quorum");
         return response.data;
       } else {
         console.error("❌ El endpoint no devolvió un array.");
@@ -116,7 +120,7 @@ useEffect(() => {
 
     const quorumPercentage = (sumaConectados / total) * 100;
 
-    // console.log("quorumPercentage:", quorumPercentage);
+    console.log("quorumPercentage:", quorumPercentage);
     setQuorum(quorumPercentage);
   };
 

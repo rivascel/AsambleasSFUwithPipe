@@ -2,9 +2,9 @@ import React, { useEffect, useState, useContext } from 'react';
 import axios from 'axios';
 import '../styles/Header.css';
 
-// import { UserContext } from "../components/UserContext";
+import { UserContext } from "../components/UserContext";
 
-import { UserContext } from "./UserContext";
+// import { UserContext } from "./UserContext";
 
 
 const Header = () => {

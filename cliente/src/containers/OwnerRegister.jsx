@@ -21,10 +21,11 @@ const RegisterOwner = ({ onRegister }) => {
         );
         console.log("Enlace mágico solicitado para:", email, role);
 
+    
 
         setMessage("Enlace enviado. Revisa tu correo.");
         onRegister?.(email); // si quieres avanzar al siguiente paso visual
-        login(email, "owner", {}); // Pasar el rol y datos adicionales
+        login(email, "owner"); // Pasar el rol y datos adicionales
         // localStorage.setItem("userEmail", email); // Guardar el email en localStorage
         // login(email);
       } catch (error) {

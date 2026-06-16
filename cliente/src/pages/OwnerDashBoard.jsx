@@ -10,6 +10,9 @@ import Questions from '../containers/owner/Questions';
 import { UserContext } from "../components/UserContext";
 import AppContext from '../context/AppContext';
 
+const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_URL_LOCAL; 
+const apiUrl = API_URL;
+
 
 const Section = ({ title, children }) => (
   <div className="bg-white p-4 rounded-lg shadow-md">
@@ -19,7 +22,9 @@ const Section = ({ title, children }) => (
 );
 
 const DashBoardOwner = () => {
-  const { apiUrl } = useContext(AppContext);
+  // const { apiUrl } = useContext(AppContext);
+
+  // const { apiUrl } = axios.get(`${API_URL}/api/request-magic-link`);
 
   const socketRef = React.useRef();
 
@@ -33,7 +38,7 @@ const DashBoardOwner = () => {
   const [error, setError] = useState(null);
   // const [quorum, setQuorum] = useState(null);
   const [votesData, setVotesData] = useState({}); // lista de todos los propietarios
-  const { email, login, setQuorum, setApprovalVotes, setRejectVotes, setBlankVotes } = useContext(UserContext);
+  const { email, login, role, setQuorum, setApprovalVotes, setRejectVotes, setBlankVotes } = useContext(UserContext);
   
   useEffect(() => {
   axios.get(`${apiUrl}/api/owner-data`, {
@@ -56,6 +61,7 @@ const DashBoardOwner = () => {
     if (!email) return;
     
     axios.post(`${apiUrl}/api/fileOwnerByEmail`, 
+      
             { email },
             { withCredentials: true },
         )
@@ -71,7 +77,7 @@ const DashBoardOwner = () => {
             };
 
             // 3. Guarda los datos en el contexto
-            login(email, ownerData); // Pasa los datos al login
+            login(email, role, ownerData); // Pasa los datos al login
           })
         .catch(error =>{
           console.error("Error", error);

@@ -14,7 +14,7 @@ export const useRoomState = (socketRef, roomId) => {
     // Cuando un usuario se une y se le asigna un router
     socketRef.current.on("user-router-assigned", ({ userId, routerId }) => {
       userRoutersMap.current.set(userId, routerId);
-      console.log(`📌 Usuario ${userId} está en router ${routerId}`);
+      // console.log(`📌 Usuario ${userId} está en router ${routerId}`);
     });
 
     // Cuando un usuario se desconecta, limpiar su router

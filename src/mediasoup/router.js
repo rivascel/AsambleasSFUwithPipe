@@ -281,6 +281,24 @@ export function removePeerFromRoom(roomId, socketId) {
   console.log(`👋 Peer ${socketId} eliminado`);
 }
 
+export function removePeerFromProducers(roomId, socketId) {
+
+  const room = rooms.get(roomId);
+  if (!room) return;
+  const peer = room.peers.get(socketId);
+
+  if (!peer) return;
+
+  peer.producers.forEach(p => { 
+    globalProducers.delete(p.socketId);
+    p.close();
+  });
+
+  peer.producers.delete(socketId);
+
+  console.log(`👋 Peer ${socketId} eliminado de producers`);
+}
+
 /* =========================================================
    HELPERS
 ========================================================= */

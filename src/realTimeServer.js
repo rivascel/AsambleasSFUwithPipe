@@ -3,7 +3,7 @@
 
 // import { normalizeModuleId } from "vite/module-runner";
 import { createRoom,  getRoom,  addPeerToRoom,  getPeer,  removePeerFromRoom,  registerProducer,  getProducerInfo,
-  pipeProducerToRouter } from "./mediasoup/router.js";
+  pipeProducerToRouter, removePeerFromProducers } from "./mediasoup/router.js";
 
 import { createWebRtcTransport } from "./mediasoup/transport.js";
 import { Server } from "socket.io";
@@ -350,19 +350,13 @@ export default (httpServer) => {
     
                 const transport = peer.transports.find(t => t.id === transportId);
     
-                if (!transport) {
-                    throw new Error("Transport no encontrado");
-                }
+                if (!transport) { throw new Error("Transport no encontrado"); }
     
-                await transport.connect({
-                    dtlsParameters
-                });
+                await transport.connect({ dtlsParameters });
     
                 console.log(`✅ Transport conectado ${transport.id}`);
     
-                callback({
-                    connected: true
-                });
+                callback({ connected: true });
     
             } catch (err) {
     
@@ -401,8 +395,7 @@ export default (httpServer) => {
                 peer.role = role; // Guardar el rol del peer
                 // room.activeProducerId = socket.id;
 
-                console.log("DESPUES push:",peer.producers.length
-);
+                console.log("DESPUES push:",peer.producers.length);
 
                 
                 // REGISTRO GLOBAL
@@ -424,17 +417,70 @@ export default (httpServer) => {
 
                 producer.on("close", () => {
                     room.activeProducerId = null;
+
+                    peer.producers = peer.producers.filter(
+                        p => p.id !== producer.id
+                    );
+
                     socket.to(roomId).emit("producer-closed", {
-                  producerId:
-                    producer.id
+                    producerId: producer.id
+
+                    
                 });
-                });
+                console.log("DESPUES DE CERRAR push:",peer.producers.length);
+                }
+                
+                );
+
+                producer.on("transportclose", () => {
+
+                peer.producers =
+                peer.producers.filter(
+                    p => p.id !== producer.id
+                );
+
+            });
 
             } catch (error) {
                 console.error("❌ Error en produce:", error);
                 callback?.({ error: error.message });
             }
         });
+
+        socket.on("stopProducer", async ( { roomId, producerId }  ) => {
+            console.log("🛑 stopProducer recibido", { roomId, producerId });
+            const room = await getRoom(roomId);
+            const peer = await getPeer(roomId, socket.id);
+
+            if (!peer) {
+                console.error("❌ Peer no encontrado");
+                return;
+            }
+
+            const producer = peer.producers.find(p => p.id === producerId);
+            console.log("🔍 Buscando producer:", producer);
+
+            if (!producer) {
+                console.error("❌ Producer no encontrado");
+                return;
+            }
+
+            await producer.close();
+
+            // Eliminar producer del peer
+            peer.producers = peer.producers.filter(p => p.id !== producerId);
+
+            // Eliminar producer del registro global
+            globalProducers.delete(producerId);
+
+            // ✅ Notificar a todos los peers de la sala
+            socket.to(roomId).emit("producerClosed", { producerId });
+
+            console.log(`🛑 Producer ${producerId} detenido y eliminado`);
+            
+        });
+
+
 
         // 🔹 Obtener productores existentes (para usuarios que entran tarde)
         socket.on("getProducers", (data, callback) => {
@@ -592,7 +638,7 @@ export default (httpServer) => {
             const room = getRoom(socket.roomId);
             const peer = getPeer(socket.roomId, socket.id);
 
-            // removePeerFromRoom( socket.roomId, socket.id);
+            removePeerFromRoom( roomId, socket.id);
 
             // socket.to(socket.roomId)
             //     .emit("peer-left",  { peerId: socket.id } );
