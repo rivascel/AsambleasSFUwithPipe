@@ -446,38 +446,42 @@ export default (httpServer) => {
                 callback?.({ error: error.message });
             }
         });
-
+        // const globalProducers = [];
         socket.on("stopProducer", async ( { roomId, producerId }  ) => {
-            console.log("🛑 stopProducer recibido", { roomId, producerId });
-            const room = await getRoom(roomId);
-            const peer = await getPeer(roomId, socket.id);
+            console.log("roomId recibido:", roomId, typeof roomId);
+            console.log("🛑 stopProducer recibido", { producerId });
+            // const room = await getRoom(roomId);
 
-            if (!peer) {
-                console.error("❌ Peer no encontrado");
-                return;
-            }
+            try {
+                const peer = await getPeer(roomId, socket.id);
 
-            const producer = peer.producers.find(p => p.id === producerId);
-            console.log("🔍 Buscando producer:", producer);
+                if (!peer) {
+                    console.error("❌ Peer no encontrado");
+                    return;
+                }
 
-            if (!producer) {
-                console.error("❌ Producer no encontrado");
-                return;
-            }
-
-            await producer.close();
-
-            // Eliminar producer del peer
-            peer.producers = peer.producers.filter(p => p.id !== producerId);
-
-            // Eliminar producer del registro global
-            globalProducers.delete(producerId);
-
-            // ✅ Notificar a todos los peers de la sala
-            socket.to(roomId).emit("producerClosed", { producerId });
-
-            console.log(`🛑 Producer ${producerId} detenido y eliminado`);
+                const producer = peer.producers.find(p => p.id === producerId);
+                console.log("🔍 Buscando producer:", producer);
+                if (!producer) {
+                    console.error("❌ Producer no encontrado");
+                    return;
+                }
             
+
+                await producer.close();
+
+                // Eliminar producer del peer
+                peer.producers = peer.producers.filter(p => p.id !== producerId);
+
+
+                // ✅ Notificar a todos los peers de la sala
+                socket.to(roomId).emit("producerClosed", { producerId });
+
+                console.log(`🛑 Producer ${producerId} detenido y eliminado`);
+
+            } catch (err) {
+                console.error("💥 Error en stopProducer:", err);
+            }
         });
 
 

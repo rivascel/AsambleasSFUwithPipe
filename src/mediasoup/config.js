@@ -37,13 +37,13 @@ export const configuration = {
         {
           protocol: "udp",
           ip: config.ip, // Escucha en todas las interfaces de red
-          announcedIp: config.announcedIp, // luego pones tu IP pública
+          announcedAddress: config.announcedIp, // luego pones tu IP pública
 
         },
-                {
+        {
           protocol: "tcp",
           ip: config.ip, // Escucha en todas las interfaces de red
-          announcedIp: config.announcedIp, // luego pones tu IP pública
+          announcedAddress: config.announcedIp, // luego pones tu IP pública
 
         }
         

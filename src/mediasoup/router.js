@@ -136,10 +136,7 @@ export async function addPeerToRoom(roomId,  socketId,  isBroadcaster = false) {
           .from(room.peers.values())
           .filter(p => p.workerId === worker.id).length; //workerId viene de peer.
 
-      return {
-        worker,
-        peerCount
-      };
+      return { worker, peerCount };
     });
 
     //busca el worker con menos peers asignados para balancear la carga de manera equitativa entre los workers disponibles.

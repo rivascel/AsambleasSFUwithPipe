@@ -53,9 +53,12 @@ const VideoGeneral = () => {
 
   const [peers, setPeers] = useState([]);
 
-  const [isLive, setIsLive] = useState(true);
-  const [isLiveConsume, setIsLiveConsume] = useState(true);
+  const [isLive, setIsLive] = useState(false);
+  const [isLiveAttended, setIsLiveAttended] = useState(false);
+  const [isLiveOwner, setIsLiveOwner] = useState(false);
   const imageRef = useRef(null);
+  const [socketReady, setSocketReady] = useState(false);
+  let socket;
 
 
  // Usar el hook de estado de la sala
@@ -142,31 +145,55 @@ const VideoGeneral = () => {
       console.warn("⚠️ Ya estás produciendo");
       return;
     }
+    setIsLiveOwner(true);
     await createSendTransport();
     await produce();
   }
 
+  useEffect(() => {
+    const handler = ({ producerId }) => {
+      
+      const consumer = consumersRef.current.find( c => c.producerId === producerId );
+
+      if (!consumer) return;
+
+      consumer.close();
+
+      consumersRef.current = consumersRef.current.filter( c => c.producerId !== producerId);
+
+      remoteProducerRef.current.delete(producerId);
+
+      const isAdmin = consumer.role === "admin";
+
+      if (isAdmin) {
+        setIsLive(false);
+      } else {
+        setIsLiveAttended(false);
+        setIsLiveOwner(false);
+      }
+    };
+
+    if (socket) {
+    
+      socketRef.current.on("producerClosed", handler);
+      console.log("se recibio productor detenido");
+    }
+
+    return () => {
+      socketRef.current.off("producerClosed", handler);
+    };
+}, []);
+
   const stopProducing = async () => {
     // cerrar producers
 
-    producersRef.current.forEach((producer, kind) => {
-      socketRef.current.emit("stopProducer",  { roomId, producerId: producer.id });
+    producersRef.current.forEach((roomId, producer) => {
+      socketRef.current.emit("stopProducer",  { roomId: roomId.id || roomId, producerId: producer.id });
       // producer.close();
     });
 
     producersRef.current.clear();
 
-    // En stopProducing (lado viewer, cuando recibe evento del servidor)
-    socketRef.current.on("producerClosed", ({ producerId }) => {
-      remoteProducerRef.current.delete(producerId); // ← limpiar el Set
-      // + cerrar el consumer asociado
-      const consumer = consumersRef.current.find(c => c.producerId === producerId);
-      if (consumer) {
-        consumer.close();
-        consumersRef.current = consumersRef.current.filter(c => c.id !== consumer.id);
-      }
-      setIsLive(false);
-    });
 
     // cerrar transport
     if (sendTransportRef.current) {
@@ -180,11 +207,11 @@ const VideoGeneral = () => {
     }
     console.log("🛑 Producción detenida");
 
-    setIsLive(false);
+    setIsLiveOwner(false); //cierra la ventana del propietario transmitiendo
 
-    return () => {
-      socketRef.current.off("producerClosed");
-    }
+    // return () => {
+    //   socketRef.current.off("producerClosed");
+    // }
   };
 
   // 4. joinRoom
@@ -345,7 +372,6 @@ const VideoGeneral = () => {
 
     console.log("🎥 Produciendo...");
 
-    socketRef.current.broadcast.to(roomId).emit("new-producer", { producerId, kind, role });
     
     setState("PRODUCING");
     setIsAllowed(true);
@@ -370,7 +396,6 @@ const VideoGeneral = () => {
             const transport =  deviceRef.current.createRecvTransport(params);
             recvTransportRef.current = transport;
 
-            console.log("✅ recvTransport creado", transport.id);
             // resolve(transport);
 
             // Variable fuera de la función o en un Ref para controlar el estado
@@ -441,8 +466,6 @@ const VideoGeneral = () => {
   // consumir existentes
   const consumeExisting = async () => {
 
-
-
     const producers = await new Promise((resolve) => {
       socketRef.current.emit("getProducers", { roomId }, resolve);
       console.log("📡 Solicitando productores existentes para la sala", roomId);
@@ -457,7 +480,7 @@ const VideoGeneral = () => {
 
     for (const { producerId, kind, role } of producers) {
 
-      if (remoteProducerRef.current.has(producerId)) continue; 
+      if (remoteProducerRef.current.has(producerId) && role === "owner") continue; 
 
       remoteProducerRef.current.set(producerId, { kind, role: role });
 
@@ -532,11 +555,19 @@ const VideoGeneral = () => {
     console.log("1. consumersRef push");
     consumer.producerRole = consumerData.role;
     consumersRef.current.push(consumer);
+    console.log(" XX rol consumicor ",consumer.producerRole );
 
 
     console.log("2. targetVideo", remoteRef.current);
-    const targetVideo = consumer.producerRole === "admin" ? remoteRef.current : remoteRefTemp.current;
+    const targetVideo = consumer.producerRole === "admin" ? remoteRef.current : remoteRefTemp.current ;
 
+    if (consumer.producerRole === "admin") {
+      console.log("rol del consumidor", consumer.producerRole)
+      setIsLive(true)
+    } else {
+      setIsLiveAttended(true)
+    }
+    
     if (!targetVideo.srcObject) {
       console.log("4. creando MediaStream");
       targetVideo.srcObject = new MediaStream();
@@ -544,6 +575,8 @@ const VideoGeneral = () => {
 
     const stream = targetVideo.srcObject;
     console.log("5. stream creado", stream);
+
+
 
     // Eliminar tracks antiguos del mismo tipo
     stream.getTracks().filter(t => t.kind === consumerData.kind)
@@ -573,40 +606,17 @@ const VideoGeneral = () => {
   // 🔴 nuevos producers en tiempo real
   
   const listenForNewProducers = () => {
-    // socketRef.current.on("new-producer", async ({ producerId, producerSocketId, kind, role }) => {
-    //   console.log("🆕 Nuevo producer:", producerId);
-
-    //   if (remoteProducerRef.current.has(producerId)) return;
-
-    //   remoteProducerRef.current.clear();
-    //   remoteProducerRef.current.set(producerId, { socketId: producerSocketId, kind });
-    //   console.log("remoteProducerRef:", remoteProducerRef);
-      
-    //   // const transportReady = recvTransportRef.current?.connectionState === 'connected';
-    //   // console.log("rectransport state:", recvTransportRef.current?.connectionState);
-
-    //   //=============
-    //   if (consumingRef.current.has(producerId)) return;
-
-    //   consumingRef.current.add(producerId);
-
-    //   try {
-    //     await consume({ producerId, kind, role });
-    //   } finally {
-    //     consumingRef.current.delete(producerId);
-    //   }
-
-
-
-    //   return () => {
-    //     socketRef.current.off("new-producer");
-    //   };
-    // })
+    
     socketRef.current.on("new-producer", async (producer) => {
       if (consumingRef.current.has(producer.producerId)) return;
 
+      if (remoteProducerRef.current.has(producer.producerId)) return;
+
       try {
         consumingRef.current.add(producer.producerId);
+        remoteProducerRef.current.set(producer.producerId, socketRef.current.id );
+
+        console.log("oye tengo un productor nuevo", remoteProducerRef);
 
         await consume(producer);
 
@@ -614,6 +624,7 @@ const VideoGeneral = () => {
         console.error("Error consumiendo producer", err);
       } finally {
         consumingRef.current.delete(producer.producerId);
+        // remoteProducerRef.current.delete(producer.producerId);
       }
     });
   };
@@ -667,12 +678,14 @@ const VideoGeneral = () => {
     if (initializedRef.current) return;
     initializedRef.current = true;
 
-    const socket = getSocket(apiUrl);
+    socket = getSocket(apiUrl);
     socketRef.current = socket;
+    
 
     socketRef.current.on("connect", async () => {
       console.log("🟢 Conectado:", socket.id);
       await initFlow();
+      setSocketReady(true);
     });
 
     if (remoteRef.current) {
@@ -685,9 +698,6 @@ const VideoGeneral = () => {
     }
   }, []);
   
-
-
-
   const openBroadcasting = async () => {
       try {
         // 1. Obtener stream local
@@ -722,15 +732,13 @@ const VideoGeneral = () => {
           <div 
           // style={{ width: '100%', aspectRatio: '16/9', backgroundColor: '#1a1a1a' }} 
           className="rounded overflow-hidden">
-            <div className={isLive ? "block":"hidden"}>
                 <video 
                     ref={remoteRef} 
                     autoPlay 
                     playsInline 
                     muted 
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: isLive ? 'hidden' : 'block' }}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: isLive ? 'block' : 'none' }}
                 />
-            </div>
           </div>
 
           <h2 className="text-xl font-semibold mb-2">Intervención asambleista</h2>
@@ -742,35 +750,42 @@ const VideoGeneral = () => {
                   autoPlay 
                   playsInline 
                   muted 
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: isLive ? 'block' : 'none' }}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: isLiveAttended ? 'block' : 'none' }}
               />
 
           </div>
         </div>
 
-
         <h2 className="text-xl font-semibold mb-2">Intervención del copropietario</h2>
         {viewerReady && stream ? (
           <>
             <video ref={localRef} autoPlay playsInline className="w-full rounded border" 
-             style={{ width: '100%', height: '100%', objectFit: 'cover', display: isLiveConsume ? 'block' : 'none' }}
+             style={{ width: '100%', height: '100%', objectFit: 'cover', display: isLiveOwner ? 'block' : 'none' }}
             ></video>
 
             <div className="controls">
-              {!isAllowed ? (
-                <button
-                  onClick={openBroadcasting}
-                  className="bg-blue-600 text-blue px-6 py-2 rounded hover:bg-blue-700 disabled:bg-gray-400"
-                >
-                  Iniciar llamada
-                </button> 
-                ):(
+              {!isAllowed ? 
+              (
+                // <button
+                //   onClick={openBroadcasting}
+                //   className="bg-blue-600 text-blue px-6 py-2 rounded hover:bg-blue-700 disabled:bg-gray-400"
+                // >
+                //   Iniciar llamada
+                // </button> 
                 <button
                   onClick={hangUpBroadcasting}
                   className="bg-red-600 text-blue px-6 py-2 rounded hover:bg-red-700 disabled:bg-gray-400"
                 >
                   Detener llamada
-                </button>  
+                </button> 
+                ):(
+                // <button
+                //   onClick={hangUpBroadcasting}
+                //   className="bg-red-600 text-blue px-6 py-2 rounded hover:bg-red-700 disabled:bg-gray-400"
+                // >
+                //   Detener llamada
+                // </button>
+                <p>Transmitiendo...</p>  
                 )
               }
             </div>
