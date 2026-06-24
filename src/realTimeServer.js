@@ -382,12 +382,7 @@ export default (httpServer) => {
             const transport = peer.transports.find(t => t.id === transportId);
 
             try {
-                const producer = await transport.produce({
-                kind,
-                rtpParameters,
-                appData: { peerId: socket.id, },
-                
-                });
+                const producer = await transport.produce({ kind, rtpParameters, appData: { peerId: socket.id, } });
 
                 console.log("ANTES push:",peer.producers.length);
 
@@ -401,7 +396,7 @@ export default (httpServer) => {
                 // REGISTRO GLOBAL
                 registerProducer({ producer, roomId: socket.roomId, peerId: socket.id, routerId: peer.routerId, 
                                     workerId: peer.workerId, role: peer.role });
-                console.log("🎥 Producer creado:", producer.id);
+                console.log("🎥 Producer creado y rol:", producer.id, role);
 
                 callback({ id: producer.id });
 
@@ -411,9 +406,10 @@ export default (httpServer) => {
                     producerSocketId: socket.id, // 👈 Socket ID del productor
                     // peerId: socket.id,
                     kind: producer.kind,
-                    role
+                    role: role
                 });
-                console.log("📢 Emitiendo a:", peer.roomId);
+
+                console.log("📢 Emitiendo a:", peer.roomId, role);
 
                 producer.on("close", () => {
                     room.activeProducerId = null;
@@ -461,12 +457,10 @@ export default (httpServer) => {
                 }
 
                 const producer = peer.producers.find(p => p.id === producerId);
-                console.log("🔍 Buscando producer:", producer);
                 if (!producer) {
                     console.error("❌ Producer no encontrado");
                     return;
                 }
-            
 
                 await producer.close();
 
@@ -475,7 +469,11 @@ export default (httpServer) => {
 
 
                 // ✅ Notificar a todos los peers de la sala
-                socket.to(roomId).emit("producerClosed", { producerId });
+                socket.to(roomId).emit("producerClosed", producerId );
+
+                // 🔥 IMPORTANTE: marca estado antes de cerrar consumers
+// room.closedProducers = room.closedProducers || new Set();
+// room.closedProducers.add(producerId);
 
                 console.log(`🛑 Producer ${producerId} detenido y eliminado`);
 
@@ -544,13 +542,6 @@ export default (httpServer) => {
                     throw new Error("Cannot consume");
                 }
                 
-                // const canConsume = consumerPeer.router.canConsume({ producerId: pipeProducer.id, rtpCapabilities });
-
-                // if (!canConsume) { 
-                //     throw new Error("Cannot consume");
-                // }
-
-
                 // CONSUMER NORMAL
                 const consumer = await transport.consume({ producerId: pipeProducer.id, rtpCapabilities, paused: false });
 
@@ -582,21 +573,50 @@ export default (httpServer) => {
         socket.on("resume-consumer", async ({ consumerId }, callback) => {
             
             try {
-
                 const peer = getPeer(socket.roomId, socket.id );
 
                 if (!peer) { throw new Error("Peer no encontrado" );}
 
                 console.log("▶️ Resume solicitado:", consumerId);
                 // const peer = getOnePeerInRoom(socket.roomId, socket.id);
-                
+
                 console.log("👤 Peer:", !!peer);
                 const consumer = peer?.consumers.find(c => c.id === consumerId);
+
+                if (!consumer) {
+  console.warn("⚠️ consumer no existe");
+  return;
+}
+
+if (consumer.closed) {
+  console.warn("⚠️ consumer ya cerrado (skip resume)");
+  return;
+}
+
+                // 🔵 USO SEGURO
+                if (consumer.paused) {
+                await consumer.resume();
+                }
+
+    console.log("✅ consumer resumido:", consumerId);
             
                 console.log("📺 Consumer encontrado:", !!consumer);
                 console.log("Tipo consumers:", peer.consumers.constructor.name);
 
-                await consumer.resume();
+                try {
+ console.log("consumer state:", {
+  id: consumer.id,
+  closed: consumer.closed,
+  producerId: consumer.producerId,
+  paused: consumer.paused
+});
+
+
+                     await consumer.resume();
+                    
+                } catch (err) {
+                    console.error("Error resumiendo consumer:", err);
+                }
 
                 callback?.({ success: true });
             } 
@@ -604,6 +624,14 @@ export default (httpServer) => {
                 console.error( "❌ resume-consumer",err);
                 callback?.({ error: err.message });
             }
+        });
+
+        
+        socket.on("pause-consumer", async ({ consumerId }) => {
+            const peer = getPeer(socket.roomId, socket.id );
+            const consumer = peer.consumers.find(c => c.id === consumerId);
+
+            await consumer.pause();
         });
 
         socket.on("set-quality", async ({ consumerId, quality }) => {
@@ -619,12 +647,6 @@ export default (httpServer) => {
             });
         });
 
-        socket.on("pause-consumer", async ({ consumerId }) => {
-            const peer = getPeer(socket.roomId, socket.id );
-            const consumer = peer.consumers.find(c => c.id === consumerId);
-
-            await consumer.pause();
-        });
 
         //reconect
         socket.on("connect", () => {

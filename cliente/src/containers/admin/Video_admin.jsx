@@ -109,15 +109,15 @@ const VideoGeneral = () => {
 
       const handler = ({ producerId }) => {
         
-        const consumer = consumersRef.current.find( c => c.producerId === producerId );
+        // const consumer = consumersRef.current.find( c => c.producerId === producerId );
   
-        if (!consumer) return;
+        // if (!consumer) return;
   
-        consumer.close();
+        // consumer.close();
   
-        consumersRef.current = consumersRef.current.filter( c => c.producerId !== producerId);
+        // consumersRef.current = consumersRef.current.filter( c => c.producerId !== producerId);
   
-        remoteProducerRef.current.delete(producerId);
+        // remoteProducerRef.current.delete(producerId);
   
         const isAdmin = consumer.role === "admin";
   
@@ -143,7 +143,9 @@ const VideoGeneral = () => {
     // cerrar producers
     console.log("PRODUCERS REF:", producersRef);
     producersRef.current.forEach((producerInfo, producerId) => {
-      socketRef.current.emit("stopProducer",  { roomId, producerId });
+       new Promise(resolve => {
+        socketRef.current.emit("stopProducer",  { roomId, producerId }, resolve);
+      })
       // producer.close();
     });
 
@@ -162,9 +164,9 @@ const VideoGeneral = () => {
     }
     console.log("🛑 Producción detenida");
 
-    return () => {
-      socketRef.current.off("producerClosed");
-    }
+    // return () => {
+    //   socketRef.current.off("producerClosed");
+    // }
 
   };
 
