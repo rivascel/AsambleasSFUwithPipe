@@ -152,7 +152,6 @@ const VideoGeneral = () => {
 
   useEffect(() => {
     const handler = ( producerId ) => {
-      console.log("🔥 HANDLER EJECUTADO", producerId);
 
       console.log("remoteProducerRef en useEffect", remoteProducerRef);
 

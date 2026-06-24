@@ -105,39 +105,42 @@ const VideoGeneral = () => {
     setIsLive(true);
   }
 
-  useEffect(() => {
-
-      const handler = ({ producerId }) => {
-        
-        // const consumer = consumersRef.current.find( c => c.producerId === producerId );
+    useEffect(() => {
+      const handler = ( producerId ) => {
   
-        // if (!consumer) return;
+        console.log("remoteProducerRef en useEffect", remoteProducerRef);
   
-        // consumer.close();
+        const producerData = remoteProducerRef.current.get(producerId);
+        if (producerData) {
+          const { kind, role } = producerData;
+        }
   
-        // consumersRef.current = consumersRef.current.filter( c => c.producerId !== producerId);
+        if (!producerData) return;
   
-        // remoteProducerRef.current.delete(producerId);
+        remoteProducerRef.current.delete(producerId);
   
-        const isAdmin = consumer.role === "admin";
+        const isAdmin = producerData.role === "admin";
   
         if (isAdmin) {
           setIsLive(false);
         } else {
           setIsLiveAttended(false);
+          setIsLiveOwner(false);
         }
       };
-    
-    if (socketRef.current) {
-      socketRef.current.on("producerClosed", handler);
-      console.log("se recibio productor detenido");
+  
+      if (socketRef.current) {
+        console.log("✅ Registrando listener producerClosed");
+        socketRef.current.on("producerClosed", handler );
+      } else {
+      console.log("❌ socketRef.current es null");
     }
-
-    return () => {
-      socketRef.current.off("producerClosed", handler);
-    };
-
+  
+      return () => {
+        socketRef.current.off("producerClosed", handler);
+      };
   }, []);
+  
 
   const stopProducing = async () => {
     // cerrar producers
@@ -549,29 +552,52 @@ const createAndSetupConsumer = async (consumerData) => {
   };
 
 
-  const listenForNewProducers = () => {
+ const listenForNewProducers = () => {
+    
+    socketRef.current.on("new-producer", async (data) => {
+      // if (consumingRef.current.has(producer.producerId)) return;
 
-    socketRef.current.on("new-producer", async (producer, kind, role) => {
-      if (consumingRef.current.has(producer.producerId)) return;
-
-      if (remoteProducerRef.current.has(producer.producerId)) return;
-
-      remoteProducerRef.current.set(producer.producerId, kind, role );
-      
+      if (remoteProducerRef.current.has(data.producerId)) return;
 
       try {
-        console.log("productores remotos", remoteProducerRef);
-        consumingRef.current.add(producer.producerId);
+        // consumingRef.current.add(producer.producerId, { role });
+        // consumingRef.current.set(producer.producerId, { role });
+        console.log("rol del productor que esta transmitiendo", data.role);
 
-        await consume(producer);
+        remoteProducerRef.current.set(data.producerId, {
+          kind: data.kind,
+          role: data.role
+        } );
+
+
+        const producerData = remoteProducerRef.current.get(data.producerId);
+        if (producerData) {
+          const { kind, role } = producerData; 
+          console.log("role en owner", role);
+        }
+
+
+        console.log(`oye tengo un productor nuevo con rol ${data.producerId} ${data.role}  ` );
+
+
+        // Array.from(remoteProducerRef.current.keys()).find( c => c.producerId === producerId );
+
+        await consume({
+          producerId:data.producerId, 
+          kind: data.kind, 
+          role: data.role
+        });
+          
+          
+        
 
       } catch (err) {
         console.error("Error consumiendo producer", err);
       } finally {
-        consumingRef.current.delete(producer.producerId);
+        consumingRef.current.delete(data.producerId);
       }
     });
-  }
+  };
 
 
 
