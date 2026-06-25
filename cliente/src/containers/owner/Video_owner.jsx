@@ -164,6 +164,8 @@ const VideoGeneral = () => {
 
       remoteProducerRef.current.delete(producerId);
 
+      consumersRef.current = consumersRef.current.filter( (c) => c.producerId !== producerId );
+
       const isAdmin = producerData.role === "admin";
 
       if (isAdmin) {

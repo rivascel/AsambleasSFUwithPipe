@@ -559,8 +559,16 @@ export default (httpServer) => {
                     role
                     
                 });
+
+                consumer.on("producerclose", () => {
+                    peer.consumers = peer.consumers.filter(c => c.id !== consumer.id);
+                    // socket.emit("consumerClosed", { consumerId: consumer.id });
+                });
                 
-                consumer.on("close", () => { consumerPeer.consumers = consumerPeer.consumers.filter(c => c.id !== consumer.id);});
+                consumer.on("close", () => { 
+                    consumerPeer.consumers = consumerPeer.consumers.filter(c => c.id !== consumer.id);
+                    console.log("Consumidor cerrador", consumer.id);
+                });
 
             } 
             catch (err) {
@@ -583,33 +591,33 @@ export default (httpServer) => {
                 console.log("👤 Peer:", !!peer);
                 const consumer = peer?.consumers.find(c => c.id === consumerId);
 
-                if (!consumer) {
-  console.warn("⚠️ consumer no existe");
-  return;
-}
+                if (!consumer  ) {
+                        console.warn("⚠️ consumer no existe");
+                        return;
+                        }
 
-if (consumer.closed) {
-  console.warn("⚠️ consumer ya cerrado (skip resume)");
-  return;
-}
+                        if (consumer.closed) {
+                        console.warn("⚠️ consumer ya cerrado (skip resume)");
+                        return;
+                        }
 
                 // 🔵 USO SEGURO
                 if (consumer.paused) {
                 await consumer.resume();
                 }
 
-    console.log("✅ consumer resumido:", consumerId);
+                console.log("✅ consumer resumido:", consumerId);
             
                 console.log("📺 Consumer encontrado:", !!consumer);
                 console.log("Tipo consumers:", peer.consumers.constructor.name);
 
                 try {
- console.log("consumer state:", {
-  id: consumer.id,
-  closed: consumer.closed,
-  producerId: consumer.producerId,
-  paused: consumer.paused
-});
+                            console.log("consumer state:", {
+                            id: consumer.id,
+                            closed: consumer.closed,
+                            producerId: consumer.producerId,
+                            paused: consumer.paused
+                            });
 
 
                      await consumer.resume();
@@ -631,6 +639,8 @@ if (consumer.closed) {
             const peer = getPeer(socket.roomId, socket.id );
             const consumer = peer.consumers.find(c => c.id === consumerId);
 
+            if (!consumer || consumer.closed) return;
+
             await consumer.pause();
         });
 
@@ -638,6 +648,8 @@ if (consumer.closed) {
             const peer = getPeer(socket.roomId, socket.id );
 
             const consumer = peer.consumers.find(c => c.id === consumerId);
+
+            if (!consumer || consumer.closed) return;
 
             const map = { low: 0, mid: 1, high: 2 };
 

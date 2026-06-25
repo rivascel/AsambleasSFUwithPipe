@@ -15,6 +15,7 @@ const VideoGeneral = () => {
   const [isBroadcasting, setIsBroadcasting] = useState(false);
   const localRef = useRef();
   const remoteRef = useRef();
+  // const remoteRefTemp = useRef();
   const quality = useVideoQuality(remoteRef);
   const isVisible = useVisibility(remoteRef);
   const [currentQuality, setCurrentQuality] = useState(null);
@@ -40,7 +41,8 @@ const VideoGeneral = () => {
   const imageRef = useRef(null);
 
   const [isLive, setIsLive] = useState(false);
-  const [isLiveAttended, setIsLiveAttended] = useState(false);
+  // const [isLiveAttended, setIsLiveAttended] = useState(false);
+  const [isLiveOwner, setIsLiveOwner] = useState(false);
   
 
   const initializedRef = useRef(false); // 🔥 evita doble ejecución (React Strict)
@@ -118,19 +120,21 @@ const VideoGeneral = () => {
         if (!producerData) return;
   
         remoteProducerRef.current.delete(producerId);
+
+        consumersRef.current = consumersRef.current.filter( (c) => c.producerId !== producerId );
   
         const isAdmin = producerData.role === "admin";
+        console.log("es admin", isAdmin);
   
         if (isAdmin) {
           setIsLive(false);
         } else {
-          setIsLiveAttended(false);
+          // setIsLiveAttended(false);
           setIsLiveOwner(false);
         }
       };
   
       if (socketRef.current) {
-        console.log("✅ Registrando listener producerClosed");
         socketRef.current.on("producerClosed", handler );
       } else {
       console.log("❌ socketRef.current es null");
@@ -149,10 +153,8 @@ const VideoGeneral = () => {
        new Promise(resolve => {
         socketRef.current.emit("stopProducer",  { roomId, producerId }, resolve);
       })
-      // producer.close();
     });
 
-    // producersRef.current.clear();
 
 
     // cerrar transport
@@ -513,11 +515,20 @@ const createAndSetupConsumer = async (consumerData) => {
     consumersRef.current.push(consumer);
 
   
-
     console.log("2. targetVideo", remoteRef.current);
-    const targetVideo = consumer.producerRole === "admin" ? remoteRef.current : remoteRefTemp.current;
+    // const targetVideo = consumer.producerRole === "admin" ? localRef.current : remoteRef.current;
+    const targetVideo = remoteRef.current;
+
+    // if (consumer.producerRole === "admin") {
+    //   console.log("rol del consumidor", consumer.producerRole)
+    //   setIsLive(true)
+    // } else {
+    //   console.log("")
+    //   setIsLiveOwner(true)
+    // }
 
     if (!targetVideo.srcObject) {
+      setIsLiveOwner(true);
       console.log("4. creando MediaStream");
       targetVideo.srcObject = new MediaStream();
     }
@@ -587,9 +598,6 @@ const createAndSetupConsumer = async (consumerData) => {
           kind: data.kind, 
           role: data.role
         });
-          
-          
-        
 
       } catch (err) {
         console.error("Error consumiendo producer", err);
@@ -735,7 +743,7 @@ const updateConsumers = () => {
           remote ? (
             <div className="flex gap-4 mb-4">
             <video ref={remoteRef} autoPlay playsInline muted className="rounded border"
-            style={{ width: '100%', height: '100%', objectFit: 'cover', display: isLiveAttended ? 'block' : 'none' }}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', display: isLiveOwner ? 'block' : 'none' }}
             ></video>
 
             </div>
