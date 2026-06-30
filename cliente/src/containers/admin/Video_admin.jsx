@@ -69,7 +69,7 @@ const VideoGeneral = () => {
             if (request?.status === "approved") {
               approvedViewers.add(request.user_id);
               setRemote(true);
-              setIsLiveAttended(true);
+              setIsLiveOwner(true);
             }
           }
         );
@@ -123,10 +123,10 @@ const VideoGeneral = () => {
 
         consumersRef.current = consumersRef.current.filter( (c) => c.producerId !== producerId );
   
-        const isAdmin = producerData.role === "admin";
-        console.log("es admin", isAdmin);
+        const isOwner = producerData.role === "owner";
+        console.log("es owner", isOwner);
   
-        if (isAdmin) {
+        if (isOwner) {
           setIsLive(false);
         } else {
           // setIsLiveAttended(false);
@@ -154,7 +154,6 @@ const VideoGeneral = () => {
         socketRef.current.emit("stopProducer",  { roomId, producerId }, resolve);
       })
     });
-
 
 
     // cerrar transport
@@ -318,11 +317,17 @@ const VideoGeneral = () => {
           peerId: socketRef.current.id,            // Metadata adicional
         } 
       });
-       producersRef.current.set(producer.id, {socketId: socketRef.current.id, kind: track.kind });
+      //  producersRef.current.set(producer.id, {socketId: socketRef.current.id, kind: track.kind });
+        // console.log("producersRef en produce", producersRef)
+      //  console.log("🎥 Producer creado:", producer.id, "kind:", track.kind);
+      //  console.log(producersRef.current.has(producer));      // true
+        // console.log(producersRef.current.has(producer.id));   // false
+
+        //igual al de cliente
+        producersRef.current.set(producer, {socketId: socketRef.current.id, kind: track.kind });
         console.log("producersRef en produce", producersRef)
-       console.log("🎥 Producer creado:", producer.id, "kind:", track.kind);
-       console.log(producersRef.current.has(producer));      // true
-        console.log(producersRef.current.has(producer.id));   // false
+
+        
        
     }
     
@@ -510,22 +515,12 @@ const createAndSetupConsumer = async (consumerData) => {
     await new Promise((resolve) => {
       socketRef.current.emit("resume-consumer", { consumerId: consumer.id }, resolve ); });
 
-     console.log("1. consumersRef push");
     consumer.producerRole = consumerData.role;
     consumersRef.current.push(consumer);
 
   
-    console.log("2. targetVideo", remoteRef.current);
     // const targetVideo = consumer.producerRole === "admin" ? localRef.current : remoteRef.current;
     const targetVideo = remoteRef.current;
-
-    // if (consumer.producerRole === "admin") {
-    //   console.log("rol del consumidor", consumer.producerRole)
-    //   setIsLive(true)
-    // } else {
-    //   console.log("")
-    //   setIsLiveOwner(true)
-    // }
 
     if (!targetVideo.srcObject) {
       setIsLiveOwner(true);
@@ -534,7 +529,6 @@ const createAndSetupConsumer = async (consumerData) => {
     }
 
     const stream = targetVideo.srcObject;
-    console.log("5. stream creado", stream);
 
     // Eliminar tracks antiguos del mismo tipo
     stream.getTracks().filter(t => t.kind === consumerData.kind)
@@ -566,13 +560,10 @@ const createAndSetupConsumer = async (consumerData) => {
  const listenForNewProducers = () => {
     
     socketRef.current.on("new-producer", async (data) => {
-      // if (consumingRef.current.has(producer.producerId)) return;
 
       if (remoteProducerRef.current.has(data.producerId)) return;
 
       try {
-        // consumingRef.current.add(producer.producerId, { role });
-        // consumingRef.current.set(producer.producerId, { role });
         console.log("rol del productor que esta transmitiendo", data.role);
 
         remoteProducerRef.current.set(data.producerId, {
@@ -584,14 +575,12 @@ const createAndSetupConsumer = async (consumerData) => {
         const producerData = remoteProducerRef.current.get(data.producerId);
         if (producerData) {
           const { kind, role } = producerData; 
-          console.log("role en owner", role);
+          console.log("role en admin", role);
         }
 
 
         console.log(`oye tengo un productor nuevo con rol ${data.producerId} ${data.role}  ` );
 
-
-        // Array.from(remoteProducerRef.current.keys()).find( c => c.producerId === producerId );
 
         await consume({
           producerId:data.producerId, 
@@ -606,8 +595,6 @@ const createAndSetupConsumer = async (consumerData) => {
       }
     });
   };
-
-
 
 const updateConsumers = () => {
   if (!consumersRef.current.length) return;
@@ -630,8 +617,9 @@ const updateConsumers = () => {
     });
   });
 };
+
   //==============================USE EFFECTS==============================
-    useEffect(() => {
+  useEffect(() => {
     if (!deviceRef.current) {
       console.warn("⚠️ Dispositivo no cargado, no se puede iniciar flujo");
       return;
@@ -645,10 +633,10 @@ const updateConsumers = () => {
       }
   },[stream]);
 
-    useEffect(() => {
-      updateConsumers();
+  useEffect(() => {
+    updateConsumers();
   
-    }, [quality, isVisible]);
+  }, [quality, isVisible]);
 
 
   // 8. useEffect correcto (ANTI-CAOS)
@@ -673,8 +661,6 @@ const updateConsumers = () => {
       });
     }
   }, []);
-
-
 
   const openBroadcasting = async () => {
       try {

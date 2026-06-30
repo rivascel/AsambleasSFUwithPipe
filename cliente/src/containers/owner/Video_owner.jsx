@@ -171,13 +171,12 @@ const VideoGeneral = () => {
       if (isAdmin) {
         setIsLive(false);
       } else {
-        setIsLiveAttended(false);
-        setIsLiveOwner(false);
+        
+        setIsLiveAttended(false) || setIsLiveOwner(false);
       }
     };
 
     if (socketRef.current) {
-      console.log("✅ Registrando listener producerClosed");
       socketRef.current.on("producerClosed", handler );
     } else {
     console.log("❌ socketRef.current es null");
@@ -195,10 +194,7 @@ const stopProducing =  () => {
        new Promise(resolve => {
         socketRef.current.emit("stopProducer",  { roomId, producerId }, resolve);
       })
-      // producer.close();
     });
-
-    // producersRef.current.clear();
 
 
     // cerrar transport
@@ -369,7 +365,7 @@ const stopProducing =  () => {
           peerId: socketRef.current.id,            // Metadata adicional
         } 
       });
-      producersRef.current.set(producer, {socketId: socketRef.current.id, kind: track.kind });
+      producersRef.current.set(producer.id, {socketId: socketRef.current.id, kind: track.kind });
     }
 
     console.log("🎥 Produciendo...");
@@ -555,29 +551,24 @@ const stopProducing =  () => {
       socketRef.current.emit("resume-consumer", { consumerId: consumer.id }, resolve ); 
     });
 
-    console.log("1. consumersRef push");
     consumer.producerRole = consumerData.role;
     consumersRef.current.push(consumer);
     console.log(" XX rol consumicor ",consumer.producerRole );
 
 
-    console.log("2. targetVideo", remoteRef.current);
     const targetVideo = consumer.producerRole === "admin" ? remoteRef.current : remoteRefTemp.current ;
 
     if (consumer.producerRole === "admin") {
-      console.log("rol del consumidor", consumer.producerRole)
       setIsLive(true)
     } else {
       setIsLiveAttended(true)
     }
     
     if (!targetVideo.srcObject) {
-      console.log("4. creando MediaStream");
       targetVideo.srcObject = new MediaStream();
     }
 
     const stream = targetVideo.srcObject;
-    console.log("5. stream creado", stream);
 
     // Eliminar tracks antiguos del mismo tipo
     stream.getTracks().filter(t => t.kind === consumerData.kind)

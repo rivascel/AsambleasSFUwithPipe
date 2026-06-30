@@ -409,20 +409,14 @@ export default (httpServer) => {
                     role: role
                 });
 
-                console.log("📢 Emitiendo a:", peer.roomId, role);
+                console.log("📢 Emitiendo a:", peer.roomId, role, producer.id);
 
                 producer.on("close", () => {
                     room.activeProducerId = null;
 
-                    peer.producers = peer.producers.filter(
-                        p => p.id !== producer.id
-                    );
+                    peer.producers = peer.producers.filter(p => p.id !== producer.id);
 
-                    socket.to(roomId).emit("producer-closed", {
-                    producerId: producer.id
-
-                    
-                });
+                    socket.to(roomId).emit("producer-closed", { producerId: producer.id });
                 console.log("DESPUES DE CERRAR push:",peer.producers.length);
                 }
                 
@@ -445,7 +439,7 @@ export default (httpServer) => {
         // const globalProducers = [];
         socket.on("stopProducer", async ( { roomId, producerId }  ) => {
             console.log("roomId recibido:", roomId, typeof roomId);
-            console.log("🛑 stopProducer recibido", { producerId });
+            // console.log("🛑 stopProducer recibido", { producerId });
             // const room = await getRoom(roomId);
 
             try {
@@ -471,9 +465,6 @@ export default (httpServer) => {
                 // ✅ Notificar a todos los peers de la sala
                 socket.to(roomId).emit("producerClosed", producerId );
 
-                // 🔥 IMPORTANTE: marca estado antes de cerrar consumers
-// room.closedProducers = room.closedProducers || new Set();
-// room.closedProducers.add(producerId);
 
                 console.log(`🛑 Producer ${producerId} detenido y eliminado`);
 
