@@ -34,12 +34,12 @@ export const configuration = {
     webRtcTransport: {
 
       listenInfos: [
-        {
-          protocol: "udp",
-          ip: config.ip, // Escucha en todas las interfaces de red
-          announcedAddress: config.announcedIp, // luego pones tu IP pública
+        // {
+        //   protocol: "udp",
+        //   ip: config.ip, // Escucha en todas las interfaces de red
+        //   announcedAddress: config.announcedIp, // luego pones tu IP pública
 
-        },
+        // },
         {
           protocol: "tcp",
           ip: config.ip, // Escucha en todas las interfaces de red
