@@ -48,23 +48,6 @@ export const configuration = {
         }
         
       ],
-        // Configuración ICE
-      // iceServers: [
-      //   { urls: 'stun:stun1.l.google.com:19302' },
-      //   { urls: 'stun:stun2.l.google.com:19302' },
-      //   { urls: 'stun:stun3.l.google.com:19302' },
-      //   // TURN server gratuito para pruebas
-      //   {
-      //     urls: 'turn:standard.relay.metered.ca:443?transport=tcp',
-      //     username: '6e91ed4ca990de235a21a66f',
-      //     credential: 'mqzh0ARtqA3rjU6e',
-      //   },
-      //   {
-      //     urls: 'turn:standard.relay.metered.ca:443?transport=udp',
-      //     username: '6e91ed4ca990de235a21a66f',
-      //     credential: 'mqzh0ARtqA3rjU6e',
-      //   }
-      // ],
 
       enableTcp: true,
       enableUdp: true,
