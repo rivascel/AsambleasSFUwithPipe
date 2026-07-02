@@ -144,7 +144,7 @@ const AskToParticipate = () => {
               case 'none':
                 return (
                   <>
-                    <p className="text-gray-600 mb-2">No has enviado ninguna solicitud.</p>
+                    <p className="text-red-600 mb-2">No has enviado ninguna solicitud.</p>
                     <button 
                       onClick={handleRequest} 
                       className="bg-blue-600 text-black px-6 py-2 rounded hover:bg-blue-700"
@@ -157,7 +157,7 @@ const AskToParticipate = () => {
               case 'pending':
                 return (
                   <>
-                    <p className="text-gray-600 mb-2">Tu solicitud ({email}) está pendiente de aprobación.</p>
+                    <p className="text-red-600 mb-2">Tu solicitud ({email}) está pendiente de aprobación.</p>
                     <button 
                       onClick={cancelRequest} 
                       className="bg-blue-600 text-black px-6 py-2 rounded hover:bg-blue-700"
@@ -177,7 +177,7 @@ const AskToParticipate = () => {
               default:
                 return (
                   <>
-                    <p className="text-gray-600 mb-2">No has enviado ninguna solicitud.</p>
+                    <p className="text-red-600 mb-2">No has enviado ninguna solicitud.</p>
                   </>
                 );
             }

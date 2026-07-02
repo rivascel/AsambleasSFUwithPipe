@@ -54,7 +54,7 @@ const Chat = () => {
       <h2 className="text-xl font-semibold mb-4">Comentarios de los asistentes</h2>
 
       <div className="flex justify-between items-center mb-4">
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-red-600">
           Bienvenido, <b>{username}</b>
         </p>
         <button className="text-red-500 hover:underline text-sm">Salir</button>
@@ -62,7 +62,7 @@ const Chat = () => {
 
       <div className="border rounded p-2 h-48 overflow-y-auto bg-gray-50 mb-4">
         {messages.length === 0 ? (
-          <p className="text-gray-500">No hay mensajes aún.</p>
+          <p className="text-blue-500">No hay mensajes aún.</p>
         ) : (
           messages.map((msg, idx) => (
             <div key={idx} className="mb-1">

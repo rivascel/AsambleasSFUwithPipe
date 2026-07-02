@@ -50,7 +50,7 @@ const PollManage = () => {
     return (
         <div className="meeting__polling">
             <div className="meeting__polling--cronometer">
-              <h3>Cronometro: {displayTime}</h3>
+              <h3 className="text-red-600 mb-2">Cronometro: {displayTime}</h3>
               {/* {votingEnabled ? (
                 <p>Opciones habilitadas</p>
               ) : (
@@ -59,7 +59,7 @@ const PollManage = () => {
 
             </div>
             <div className="meeting__poll--summary">
-              <h2>Resultados Votación</h2>
+              <h2 className="text-red-600 mb-2">Resultados Votación</h2>
                   <canvas id="results" width="300" height="200"></canvas>
                   <div id="statical" hidden></div>
             </div>

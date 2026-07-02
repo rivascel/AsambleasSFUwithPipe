@@ -169,6 +169,7 @@ const VideoGeneral = () => {
       const isAdmin = producerData.role === "admin";
 
       if (isAdmin) {
+        console.log("is true admin", isAdmin);
         setIsLive(false);
       } else {
         
@@ -632,9 +633,6 @@ const stopProducing =  () => {
           kind: data.kind, 
           role: data.role
         });
-          
-          
-        
 
       } catch (err) {
         console.error("Error consumiendo producer", err);

@@ -324,11 +324,10 @@ const VideoGeneral = () => {
         // console.log(producersRef.current.has(producer.id));   // false
 
         //igual al de cliente
-        producersRef.current.set(producer, {socketId: socketRef.current.id, kind: track.kind });
+        // producersRef.current.set(producer, {socketId: socketRef.current.id, kind: track.kind });
+        producersRef.current.set(producer.id, {socketId: socketRef.current.id, kind: track.kind });
         console.log("producersRef en produce", producersRef)
 
-        
-       
     }
     
     console.log("🎥 Produciendo...");

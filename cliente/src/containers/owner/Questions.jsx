@@ -69,7 +69,7 @@ const Questions = () => {
       {votingEnabled ? (
         <p className="text-green-600">¡Puedes votar ahora! ✅</p>
       ) : (
-        <p className="text-gray-400">La votación aún no está habilitada ⏳</p>
+        <p className="text-red-400">La votación aún no está habilitada ⏳</p>
       )}
 
 
