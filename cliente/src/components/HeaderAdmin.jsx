@@ -36,12 +36,12 @@ const Header = () => {
       socketRef.current.on("updateConnectedUsers",  handleUpdate);
       console.log("🟢 Escuchando 'updateConnectedUsers'");
 
-      // return () => {
-      //   if (socketRef.current) {
-      //     // socketRef.current.off("updateConnectedUsers", handleUpdate);
-      //       socketRef.current.disconnect();
-      //   } 
-      // }
+      return () => {
+        if (socketRef.current) {
+          // socketRef.current.off("updateConnectedUsers", handleUpdate);
+            socketRef.current.off("updateConnectedUsers",  handleUpdate);
+        } 
+      }
         
     },[]);
 
