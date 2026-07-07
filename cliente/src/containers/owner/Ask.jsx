@@ -5,6 +5,7 @@ import { io } from "socket.io-client";
 import { listenToUserRequests, requestToJoinRoom, getPendingRequest, getPendingRequestById, 
   getApprovedUserById, deleteCandidate /*ApprovedUserQuery,approveUser*/ } from '../../supabase-client';
 import AppContext from '../../context/AppContext';
+import { getSocket  } from "../../hooks/socket";
 
 const AskToParticipate = () => {
   const { apiUrl } = useContext(AppContext);
@@ -21,10 +22,15 @@ const AskToParticipate = () => {
   return saved;
   });
 
-  socketRef.current = io(`${apiUrl}`, {
-    withCredentials: true,
-    transports: ["websocket"]
-  });
+
+      useEffect(() => {
+        const socket = getSocket(apiUrl);
+        socketRef.current = socket;
+        
+        // socketRef.current.on("connect", () => {
+        //   console.log("🟢 Conectado:", socketRef.current.id);
+        // });
+      },[]);
 
   useEffect(() => {
     localStorage.setItem("requestStatus", requestStatus);

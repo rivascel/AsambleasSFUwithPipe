@@ -3,16 +3,23 @@ import { io } from "socket.io-client";
 import axios from 'axios';
 import { UserContext } from "../../components/UserContext";
 import AppContext from '../../context/AppContext';
+import { getSocket  } from "../../hooks/socket";
 
+const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_URL_LOCAL; 
+const apiUrl = API_URL;
 
 const Questions = () => {
-  const { apiUrl } = useContext(AppContext);
+  // const { apiUrl } = useContext(AppContext);
   const socketRef = useRef(null);
 
-  socketRef.current = io(`${apiUrl}`, {
-    withCredentials: true,
-    transports: ["websocket"]
-  });
+      useEffect(() => {
+        const socket = getSocket(apiUrl);
+        socketRef.current = socket;
+        
+        // socketRef.current.on("connect", () => {
+        //   console.log("🟢 Conectado:", socketRef.current.id);
+        // });
+      },[]);
 
   const [selected, setSelected] = useState(null);
   const [decisionText, setDecisionText] = useState("");

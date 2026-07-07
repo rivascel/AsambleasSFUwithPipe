@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState, useContext, useRef } from 'react';
 import axios from 'axios';
 import { io } from "socket.io-client";
 import Ask from '../containers/owner/Ask';
@@ -9,6 +9,7 @@ import MeetingPollOwner from '../containers/owner/Meeting_poll_owner';
 import Questions from '../containers/owner/Questions';
 import { UserContext } from "../components/UserContext";
 import AppContext from '../context/AppContext';
+import { getSocket  } from "../hooks/socket";
 
 const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_URL_LOCAL; 
 const apiUrl = API_URL;
@@ -26,12 +27,17 @@ const DashBoardOwner = () => {
 
   // const { apiUrl } = axios.get(`${API_URL}/api/request-magic-link`);
 
-  const socketRef = React.useRef();
+  const socketRef = useRef(null);
 
-  socketRef.current = io(`${apiUrl}`, {
-    withCredentials: true,
-    transports: ["websocket"]
-  });
+
+      useEffect(() => {
+        const socket = getSocket(apiUrl);
+        socketRef.current = socket;
+        
+        // socketRef.current.on("connect", () => {
+        //   console.log("🟢 Conectado:", socketRef.current.id);
+        // });
+      },[]);
 
 
   // const [email, setEmail] = useState(null);

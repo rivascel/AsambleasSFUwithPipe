@@ -648,6 +648,8 @@ const updateConsumers = () => {
 
     socketRef.current.on("connect", async () => {
       console.log("🟢 Conectado:", socket.id);
+      console.log("Mi socket:", socketRef.current.id);
+      console.log(socketRef.current.connected);
       await initFlow();
     });
 

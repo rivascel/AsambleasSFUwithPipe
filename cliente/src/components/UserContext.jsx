@@ -31,6 +31,8 @@ const UserProvider = ({ children }) => {
   const [isAuthenticatedAdmin, setIsAuthenticatedAdmin] = useState(false);
   const [isAuthenticatedOwner, setIsAuthenticatedOwner] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [quorumPercentage, setQuorumPercentage] = useState(0);
+  // const [numberHouses, setNumberHouses] = useState(0);
   
  // ✅ Verificar sesión con el backend y restaurar localStorage
   useEffect(() => {
@@ -74,9 +76,6 @@ const UserProvider = ({ children }) => {
         withCredentials: true,
       });
 
- 
-
-
       if (adminRes.data?.user === "administrador") {
         setIsAuthenticatedAdmin(true);
         localStorage.setItem("isAuthenticatedAdmin", "true");
@@ -88,7 +87,10 @@ const UserProvider = ({ children }) => {
     }
   };
 
-
+  // const properties = {
+  //   numberHouses,
+  //   setNumberHouses
+  // }
 
   const login = (email, role, data) => {
     setEmail(email);
@@ -169,8 +171,11 @@ const UserProvider = ({ children }) => {
         setIsAuthenticatedOwner,
         setIsAuthenticatedAdmin,
         loading,
-        checkBackendSession
-        
+        checkBackendSession,
+        // properties,
+        // numberHouses,
+        // setNumberHouses
+        quorumPercentage
        }}>
       {children}
     </UserContext.Provider>

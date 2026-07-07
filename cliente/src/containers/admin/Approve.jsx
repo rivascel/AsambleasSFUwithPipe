@@ -3,6 +3,7 @@ import { io } from "socket.io-client";
 import { listenToRequests, getPendingRequest, ApprovedUserQuery, approveUser, deleteCandidate } from "../../supabase-client";
 import AppContext from '../../context/AppContext';
 import { UserContext } from "../../components/UserContext";
+import { getSocket  } from "../../hooks/socket";
 
 const AttendeesList = () => {
   const { apiUrl } = useContext(AppContext);
@@ -17,10 +18,15 @@ const AttendeesList = () => {
   const hasPending = pendingUsersIds.length > 0;
   const hasApproved = approvedUsersIds.length > 0;
 
-  socketRef.current = io(`${apiUrl}`, {
-    withCredentials: true,
-    transports: ["websocket"]
-  });
+
+    useEffect(() => {
+      const socket = getSocket(apiUrl);
+      socketRef.current = socket;
+      
+      // socketRef.current.on("connect", () => {
+      //   console.log("🟢 Conectado:", socketRef.current.id);
+      // });
+    },[]);
   
   useEffect( ()=>{
     let isMounted = true;

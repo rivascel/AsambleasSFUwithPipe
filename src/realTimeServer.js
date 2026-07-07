@@ -105,7 +105,16 @@ export default (httpServer) => {
             // ================= ENVIO DE VOTOS A CLIENTES =================
             //enviar el mensaje y el usuario
             socket.on("message", (data) => {
-                socket.broadcast.emit("message", data);
+                // socket.broadcast.emit("message", data);
+
+                console.log("Recibido de:", socket.id);
+
+                socket.broadcast.emit("message", {
+                    ...data,
+                    server: true,
+                    from: socket.id
+                });
+
             });
 
             // ===================== ACTUALIZAR USE EFFECT SOLICITUDES REALIZADAS =======
@@ -146,6 +155,12 @@ export default (httpServer) => {
                 console.log("notificación de cancelacion para unirse al stream",userId, roomId);
                 socket.broadcast.emit("canceled", { userId, roomId });
             });
+
+            socket.on("quorumCalculated", (quorumPercentage) => {
+                // console.log("📊 Quorum calculado:", quorumPercentage);
+                socket.broadcast.emit("quorumCalculated", quorumPercentage);
+            });
+        
 
                     // ================= ENVIO DEL CRONOMETRO A CLIENTES ===================
             // Escuchar el inicio del cronómetro

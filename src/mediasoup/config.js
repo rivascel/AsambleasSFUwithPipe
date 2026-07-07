@@ -50,7 +50,7 @@ export const configuration = {
       ],
 
       enableTcp: true,
-      enableUdp: true,
+      enableUdp: true, // Deshabilitar UDP
       preferUdp: false, // Priorizar TCP
       iceTransportPolicy: 'all', // O 'relay' si quieres forzar TURN
       

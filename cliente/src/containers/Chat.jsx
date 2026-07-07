@@ -2,18 +2,23 @@ import React, { useState, useContext, useEffect, useRef } from "react";
 import { io } from "socket.io-client";
 import { UserContext } from "../components/UserContext";
 import AppContext from '../context/AppContext';
+import { getSocket  } from "../hooks/socket";
+
+const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_URL_LOCAL; 
+const apiUrl = API_URL;
 
 const Chat = () => {
-
-  const { apiUrl } = useContext(AppContext);
   const socketRef = useRef(null);
-  socketRef.current = io(`${apiUrl}`, {
-    withCredentials: true,
-    transports: ["websocket"]
-    // auth: {
-    //   username: "admin"
-    // }
-  });
+  // const { apiUrl } = useContext(AppContext);
+
+  useEffect(() => {
+    const socket = getSocket(apiUrl);
+    socketRef.current = socket;
+    
+    socketRef.current.on("connect", () => {
+      console.log("🟢 Conectado en chat:", socketRef.current.id);
+    });
+  },[]);
 
   const { email, logout, ownerData } = useContext(UserContext);
   const [message, setMessage] = useState("");
@@ -31,6 +36,8 @@ const Chat = () => {
       }
 
     setMessages([...messages, newMessage]);
+
+    // console.log(socketRef.current.id);
     socketRef.current.emit("message", newMessage);
     setMessage(""); // sólo limpias el input, el servidor se encargará de reflejarlo
   };
@@ -39,6 +46,11 @@ const Chat = () => {
   // y escuchar los que recibe
   useEffect(() => {
     const handleIncoming = (msg) => {
+        //  console.log("RECIBIDO", msg);
+          //  console.log("socket local:", socketRef.current.id);
+
+          // console.log("from:", msg.from);
+
       setMessages((prevMessages) => [...prevMessages, msg]);
     };
 
@@ -48,6 +60,10 @@ const Chat = () => {
       socketRef.current.off("message", handleIncoming);
     };
   }, []);
+
+//   useEffect(() => {
+//     console.log("messages:", messages);
+// }, [messages]);
 
   return (
     <div className="bg-white p-4 rounded shadow-md">

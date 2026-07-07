@@ -1,7 +1,8 @@
-import React, { useState, useContext, useRef } from "react";
+import React, { useState, useContext, useRef, useEffect } from "react";
 import { io } from "socket.io-client";
 import { UserContext } from "../../components/UserContext";
 import AppContext from '../../context/AppContext';
+import { getSocket  } from "../../hooks/socket";
 
 
 
@@ -9,10 +10,16 @@ const SendQuestions = () => {
   const { apiUrl } = useContext(AppContext);
   const socketRef = useRef(null);
 
-  socketRef.current = io(`${apiUrl}`, {
-    withCredentials: true,
-    transports: ["websocket"]
-  });
+      useEffect(() => {
+        const socket = getSocket(apiUrl);
+        socketRef.current = socket;
+        
+        // socketRef.current.on("connect", () => {
+        //   console.log("🟢 Conectado:", socketRef.current.id);
+        // });
+      },[]);
+
+
   // const [decisionText, setDecisionText] = useState("Propuesta de ejemplo para ser votada.");
   const { decisionText, setDecisionText } = useContext(UserContext);
 

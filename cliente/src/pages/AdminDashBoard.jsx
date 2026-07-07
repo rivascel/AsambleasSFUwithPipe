@@ -10,6 +10,7 @@ import MeetingPoll from '../containers/admin/Meeting_poll';
 import Questions from '../containers/admin/SendQuestion';
 import { UserContext } from "../components/UserContext";
 import AppContext from '../context/AppContext';
+import { getSocket  } from "../hooks/socket";
 
 // const socketRef = useRef(null);
 
@@ -28,15 +29,24 @@ const DashBoardAdmin = () => {
   // const [email, setEmail] = useState(null);
   const socketRef = useRef(null);
 
-  socketRef.current = io(`${apiUrl}`, {
-    withCredentials: true,
-    transports: ["websocket"]
-  });
-
   const [error, setError] = useState(null);
-  const { email, login, setQuorum } = useContext(UserContext);
   const [connectedUsers, setConnectedUsers] = useState([]);
   const [ownerData, setOwnerData] = useState([]);
+
+  const { email, login, role, setQuorum, setApprovalVotes, setRejectVotes, setBlankVotes, numberHouses } = useContext(UserContext);
+    
+
+
+  useEffect(() => {
+    const socket = getSocket(apiUrl);
+    socketRef.current = socket;
+    
+    // socketRef.current.on("connect", () => {
+    //   console.log("🟢 Conectado:", socketRef.current.id);
+    // });
+  },[]);
+
+  
 
   useEffect(() => {
     axios.get(`${apiUrl}/api/admin-data`, {
@@ -56,73 +66,49 @@ const DashBoardAdmin = () => {
 
   }, []);
 
-  useEffect(() => {
-    if (!socketRef.current) return;
 
-    const handleUpdateConnectedUsers = async (users) => {
-      // console.log("usuarios conectados para quorum:", users);
-      setConnectedUsers(users);
-
-      const data = await fetchOwners();
-      if (data) {
-        setOwnerData(data);
-        // console.log("data",data)
-      }
-    };
-
-    socketRef.current.on("updateConnectedUsers", handleUpdateConnectedUsers);
-
-  return () => {
-    socketRef.current.off("updateConnectedUsers", handleUpdateConnectedUsers);
-  };
-}, []);
-
-useEffect(() => {
-  if (!connectedUsers.length) {
-    setQuorum(0);
-    return;
-  }
+  // useEffect(() => {
+  //     const handleUpdate = () => {
+  //       fetchOwners();
+  //     };
   
-  if (!ownerData.length) return; // data del backend
+  //     socketRef.current.on("updateConnectedUsers",  handleUpdate);
+  //     console.log("🟢 Escuchando 'updateConnectedUsers':");
+  //     return () => socketRef.current.off("updateConnectedUsers", handleUpdate);
+  //   }, [email]);      
   
-  // console.log("Calculando quorum con datos de propietarios y usuarios conectados...");
 
-  calcularQuorum(ownerData, connectedUsers);
+  // const fetchOwners = async () => {
+  //   try {
+  //     const response = await axios.get(`${apiUrl}/api/emailFile`, {
+  //       withCredentials: true,
+  //     });
+  //     if (Array.isArray(response.data)) {
+  //       calcularQuorum(response.data);
+  //     } else {
+  //       console.error("❌ El endpoint no devolvió un array.");
+  //     }
+  //   } catch (err) {
+  //     console.error("Error al obtener todos los propietarios:", err);
+  //   }
+  // };
 
-}, [connectedUsers, ownerData]);
+  // const calcularQuorum = (data) => {
+  //   let quorumPercentage = 0;
+  //   if (!data.length) return;
 
-  const fetchOwners = async () => {
-    try {
-      const response = await axios.get(`${apiUrl}/api/emailFile`, {
-        withCredentials: true,
-      });
-      if (Array.isArray(response.data)) {
-        console.log("Ok datos propietarios para quorum");
-        return response.data;
-      } else {
-        console.error("❌ El endpoint no devolvió un array.");
-      }
-    } catch (err) {
-      console.error("Error al obtener todos los propietarios:", err);
-    }
-  };
+  //   const SumItems = data.reduce((acumulator, objeto) => acumulator + parseInt(objeto.participacion), 0);
+  //   for (let i = 0; i < data.length; i++) {
+        
+  //     quorumPercentage = (SumItems / numberHouses) * 100;
 
-  const calcularQuorum = (data, connectedUsers) => {
-    const total = data.reduce((acc, o) => acc + parseInt(o.participacion),0);
+  //     console.log("quorumPercentage",quorumPercentage);
+  //     setQuorum(quorumPercentage); // Actualiza el estado del quorum
+  //     break;
 
-    const conectados = data.filter(o =>
-      connectedUsers.includes(o.correo)
-    );
-
-    // console.log("conectados reales:", conectados);
-
-    const sumaConectados = conectados.reduce((acc, o) => acc + parseInt(o.participacion),0);
-
-    const quorumPercentage = (sumaConectados / total) * 100;
-
-    console.log("quorumPercentage:", quorumPercentage);
-    setQuorum(quorumPercentage);
-  };
+  //   }
+  //   return quorumPercentage;
+  // };
 
   if (error) return <p>{error}</p>;
 
