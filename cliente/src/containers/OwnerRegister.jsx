@@ -34,6 +34,9 @@ const RegisterOwner = ({ onRegister }) => {
       }
     };
 
+    
+
+
     return (
         <>
         <div className="input-group">

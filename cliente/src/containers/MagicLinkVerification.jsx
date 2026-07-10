@@ -68,6 +68,7 @@ const MagicLinkVerification = () => {
   if (loading) return <p>Verificando enlace mágico...</p>;
   if (errorMsg) return <p style={{ color: 'red' }}>{errorMsg}</p>;
 
+
   return null;
 };
 export default MagicLinkVerification;

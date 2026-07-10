@@ -35,8 +35,6 @@ const DashBoardAdmin = () => {
 
   const { email, login, role, setQuorum, setApprovalVotes, setRejectVotes, setBlankVotes, numberHouses } = useContext(UserContext);
     
-
-
   useEffect(() => {
     const socket = getSocket(apiUrl);
     socketRef.current = socket;
@@ -45,8 +43,6 @@ const DashBoardAdmin = () => {
     //   console.log("🟢 Conectado:", socketRef.current.id);
     // });
   },[]);
-
-  
 
   useEffect(() => {
     axios.get(`${apiUrl}/api/admin-data`, {
@@ -67,48 +63,6 @@ const DashBoardAdmin = () => {
   }, []);
 
 
-  // useEffect(() => {
-  //     const handleUpdate = () => {
-  //       fetchOwners();
-  //     };
-  
-  //     socketRef.current.on("updateConnectedUsers",  handleUpdate);
-  //     console.log("🟢 Escuchando 'updateConnectedUsers':");
-  //     return () => socketRef.current.off("updateConnectedUsers", handleUpdate);
-  //   }, [email]);      
-  
-
-  // const fetchOwners = async () => {
-  //   try {
-  //     const response = await axios.get(`${apiUrl}/api/emailFile`, {
-  //       withCredentials: true,
-  //     });
-  //     if (Array.isArray(response.data)) {
-  //       calcularQuorum(response.data);
-  //     } else {
-  //       console.error("❌ El endpoint no devolvió un array.");
-  //     }
-  //   } catch (err) {
-  //     console.error("Error al obtener todos los propietarios:", err);
-  //   }
-  // };
-
-  // const calcularQuorum = (data) => {
-  //   let quorumPercentage = 0;
-  //   if (!data.length) return;
-
-  //   const SumItems = data.reduce((acumulator, objeto) => acumulator + parseInt(objeto.participacion), 0);
-  //   for (let i = 0; i < data.length; i++) {
-        
-  //     quorumPercentage = (SumItems / numberHouses) * 100;
-
-  //     console.log("quorumPercentage",quorumPercentage);
-  //     setQuorum(quorumPercentage); // Actualiza el estado del quorum
-  //     break;
-
-  //   }
-  //   return quorumPercentage;
-  // };
 
   if (error) return <p>{error}</p>;
 

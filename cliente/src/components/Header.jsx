@@ -16,6 +16,12 @@ const Header = () => {
     const quorumRef = useRef(null); // Ref para mantener el valor actual del quorum
     const [quorum, setQuorum] = useState(0); // Estado para forzar re-renderizado cuando cambie el quorum
 
+    const [participacion, setParticipacion] = useState(0); // Estado para forzar re-renderizado cuando cambie la participación
+    const particRef = useRef(null); // Ref para mantener el valor actual de la participación
+    
+    const ownerDataRef = useRef(ownerData); // Ref para mantener el valor actual de ownerData
+
+
     useEffect(() => {
         const socket = getSocket(apiUrl);
         socketRef.current = socket;
@@ -24,6 +30,12 @@ const Header = () => {
             console.log("Quorum recibido en Header:", quorumPercentage);
             quorumRef.current = quorumPercentage;
             setQuorum(quorumRef.current);
+        });
+
+        socketRef.current.on("particCalculated", (particPercentage) => {
+            console.log("Participacion recibido en Header:", particPercentage);
+            particRef.current = particPercentage;
+            setParticipacion(particRef.current);
         });
 
         return () => socketRef.current.off("quorumCalculated");
@@ -45,28 +57,28 @@ const Header = () => {
                     <div className="p-2 w-full md:w-auto">
                         <strong>Interior</strong>
                         <p id="interior">
-                            {ownerData?.interior || ''}
+                            {ownerDataRef.current?.interior || ''}
                             </p>
                     </div>
                 
                     <div className="p-2 w-full md:w-auto">
                         <strong>Apartamento</strong>
                         <p id="apartamento">
-                            {ownerData?.apartamento || ''}
+                            {ownerDataRef.current?.apartamento || ''}
                             </p>
                     </div>
                 
                     <div className="p-2 w-full md:w-auto">
                         <strong>Correo Electrónico</strong>
                         <p id="correo">
-                            {ownerData?.email || ''}
+                            {ownerDataRef.current?.email || ''}
                             </p>
                     </div>
                 
                     <div className="p-1">
                         <strong>Inmuebles que representa</strong>
                         <p id="participacion">
-                            {ownerData?.participacion || ''}
+                            {ownerDataRef.current?.participacion || ''}
                             </p>
                     </div>
                 

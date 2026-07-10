@@ -160,6 +160,18 @@ export default (httpServer) => {
                 // console.log("📊 Quorum calculado:", quorumPercentage);
                 socket.broadcast.emit("quorumCalculated", quorumPercentage);
             });
+
+            socket.on("sesionStarted", (numberSesion) => {
+                console.log(
+        "RECIBIDO sesionStarted",
+        socket.id,
+        numberSesion,
+        typeof numberSesion
+    );
+    
+                // console.log("📊 Quorum calculado:", quorumPercentage);
+                socket.broadcast.emit("sesionStarted", numberSesion);
+            });
         
 
                     // ================= ENVIO DEL CRONOMETRO A CLIENTES ===================
