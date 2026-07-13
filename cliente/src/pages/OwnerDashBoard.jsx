@@ -6,6 +6,7 @@ import Chat from '../containers/Chat';
 import Graph from '../containers/Graph';
 import VideoOwner from '../containers/owner/Video_owner';
 import MeetingPollOwner from '../containers/owner/Meeting_poll_owner';
+import Asking_list from '../containers/owner/Asking_list';
 import Questions from '../containers/owner/Questions';
 import { UserContext } from "../components/UserContext";
 import AppContext from '../context/AppContext';
@@ -41,7 +42,7 @@ const DashBoardOwner = () => {
   const socketRef = useRef(null);
   const [participacion, setParticipacion] = useState(0); // Estado para forzar re-renderizado cuando cambie la participación
   const particRef = useRef(null); // Ref para mantener el valor actual de la participación
-  const numberHouses = useRef(null)
+  const numberHouses = useRef(0)
 
 
   useEffect(() => {
@@ -63,8 +64,8 @@ const DashBoardOwner = () => {
 
     }
     socketRef.current.on("sesionStarted", handleSesionStarted);
-    socketRef.current.on("numberHouses", (numberHouses) => {
-      numberHouses.current = numberHouses;
+    socketRef.current.on("numberHouses", (numberHou) => {
+      numberHouses.current = numberHou;
     });
 
   },[]);
@@ -178,6 +179,7 @@ const DashBoardOwner = () => {
   const calcularParticipacion = (data) => {
     let participacionPercentage = 0;
     if (!data.length) return;
+    if (numberHouses.current === 0) return;
 
     const SumItems = data.reduce((acumulator, objeto) => acumulator + parseInt(objeto.participacion), 0);
     for (let i = 0; i < data.length; i++) {
@@ -187,7 +189,7 @@ const DashBoardOwner = () => {
       console.log("email archivo:", data[i].participacion);
         
       if (data[i].correo.trim() === email ) {
-          if (numberHouses.current < 0) return; 
+          
           participacionPercentage = (parseInt(data[i].participacion) / numberHouses.current) * 100;
           console.log("participacionPercentage",participacionPercentage);
           setQuorum(participacionPercentage); // Actualiza el estado del quorum
@@ -257,6 +259,10 @@ const DashBoardOwner = () => {
 
           <Section title="Pedir la Palabra">
             <Ask />
+          </Section>
+
+          <Section title="Solicitudes de Participación">
+            <Asking_list />
           </Section>
 
           <Section title="Votación">

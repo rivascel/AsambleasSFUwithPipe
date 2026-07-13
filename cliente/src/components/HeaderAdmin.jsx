@@ -115,6 +115,7 @@ const Header = () => {
         if (socketRef.current) {
             console.log("📤 Emitiendo quorumCalculated:", quorumPercentage);
             socketRef.current.emit("quorumCalculated", quorumPercentage);
+            socketRef.current.emit("numberHouses", numberHouses);
         }
 
       
