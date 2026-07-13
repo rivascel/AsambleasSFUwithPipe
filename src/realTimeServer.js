@@ -59,7 +59,9 @@ export default (httpServer) => {
 
             if (userIdentifier && !connectedUsers.includes(userIdentifier)) {
                 connectedUsers.push(userIdentifier);
-                // io.emit("updateConnectedUsers", connectedUsers);
+                io.emit("updateConnectedUsers", connectedUsers);
+                io.emit("userConnected", userIdentifier);
+                
                 console.log("lista de conectados",connectedUsers)
             }
             } catch (e) {
@@ -76,8 +78,8 @@ export default (httpServer) => {
             socket.on("disconnect", () => {
                 connectedUsers = connectedUsers.filter(id => id !== userIdentifier);
                 console.log("Usuario desconectado:", userIdentifier);
-                io.emit("updateConnectedUsers", connectedUsers); // ⬅️ importante
-                console.log("lista de conectados", connectedUsers);
+                // io.emit("updateConnectedUsers", connectedUsers); // ⬅️ importante
+                console.log("lista de desconectados", connectedUsers);
             });
 
             socket.on("wordUser", ({ user, action}) =>{
@@ -160,6 +162,11 @@ export default (httpServer) => {
                 // console.log("📊 Quorum calculado:", quorumPercentage);
                 socket.broadcast.emit("quorumCalculated", quorumPercentage);
             });
+            socket.on("requestJoinSesion", () => {
+                // console.log("📊 Quorum calculado:", quorumPercentage);
+                socket.broadcast.emit("requestJoinSesion");
+            });
+
 
             socket.on("sesionStarted", (numberSesion) => {
                 console.log(
@@ -168,9 +175,13 @@ export default (httpServer) => {
         numberSesion,
         typeof numberSesion
     );
-    
+
                 // console.log("📊 Quorum calculado:", quorumPercentage);
                 socket.broadcast.emit("sesionStarted", numberSesion);
+            });
+
+            socket.on("numberHouses", (numberHouses) => {
+                socket.broadcast.emit("numberHouses", numberHouses);
             });
         
 

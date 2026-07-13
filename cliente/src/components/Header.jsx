@@ -11,7 +11,7 @@ const apiUrl = API_URL;
 
 
 const Header = () => {
-    const { ownerData } = useContext(UserContext);
+    const { ownerData, quorumPercentage } = useContext(UserContext);
     const socketRef = useRef(null);
     const quorumRef = useRef(null); // Ref para mantener el valor actual del quorum
     const [quorum, setQuorum] = useState(0); // Estado para forzar re-renderizado cuando cambie el quorum
@@ -71,7 +71,7 @@ const Header = () => {
                     <div className="p-2 w-full md:w-auto">
                         <strong>Correo Electrónico</strong>
                         <p id="correo">
-                            {ownerDataRef.current?.email || ''}
+                            {ownerDataRef.current?.correo || ''}
                             </p>
                     </div>
                 

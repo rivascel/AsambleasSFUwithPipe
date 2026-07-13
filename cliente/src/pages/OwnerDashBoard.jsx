@@ -41,6 +41,7 @@ const DashBoardOwner = () => {
   const socketRef = useRef(null);
   const [participacion, setParticipacion] = useState(0); // Estado para forzar re-renderizado cuando cambie la participación
   const particRef = useRef(null); // Ref para mantener el valor actual de la participación
+  const numerHouses = useRef(null)
 
 
   useEffect(() => {
@@ -54,14 +55,17 @@ const DashBoardOwner = () => {
       if (numberSesion == null || numberSesion === 0) {
         console.log("Ignorando sesión:", numberSesion);
         return;
-    }
+      }
 
       sesion.current = numberSesion;
-      await ownerRegister(email, numberSesion);
+      await ownerRegister(email, sesion.current); // Registra al propietario en la sesión actual
       // await fetchOwners();
 
     }
     socketRef.current.on("sesionStarted", handleSesionStarted);
+    socketRef.current.on("numberHouses", (numberHouses) => {
+      numerHouses.current = numberHouses;
+    });
 
   },[]);
 
@@ -121,15 +125,18 @@ const DashBoardOwner = () => {
 
   //este debe usarse cuando ingresa despues de haber iniciado la sesion, para que se registre
   useEffect(() => {
-    const handleUpdate = async () => {
-      // fetchOwners();
-      await socketRef.current.emit("requestJoinSesion");
-      await ownerRegister(email, numberSesion);
-
+    const handleUserConnected = async (connectedEmail) => {
+      if (connectedEmail === email) {
+        await socketRef.current.emit("requestJoinSesion");
+        await ownerRegister(email, sesion.current);
+        fetchOwners();
+      };
     };
 
-    socketRef.current.on("updateConnectedUsers",  handleUpdate);
-    return () => socketRef.current.off("updateConnectedUsers", handleUpdate);
+    socketRef.current.on("userConnected", handleUserConnected);
+
+
+    return () => socketRef.current.off("userConnected", handleUserConnected);
   }, [email]);      
 
   useEffect(() => {
@@ -147,22 +154,22 @@ const DashBoardOwner = () => {
 }, [setApprovalVotes, setRejectVotes, setBlankVotes]);
 
    
-  // const fetchOwners = async () => {
-  //   try {
-  //     const response = await axios.get(`${apiUrl}/api/emailFile`, {
-  //       withCredentials: true,
-  //     });
-  //     console.log("Respuesta de /api/emailFile:", response.data);
-  //     if (Array.isArray(response.data)) {
-  //       // setVotesData(response.data);
-  //       calcularQuorum(response.data);
-  //     } else {
-  //       console.error("❌ El endpoint no devolvió un array.");
-  //     }
-  //   } catch (err) {
-  //     console.error("Error al obtener todos los propietarios:", err);
-  //   }
-  // };
+  const fetchOwners = async () => {
+    try {
+      const response = await axios.get(`${apiUrl}/api/emailFile`, {
+        withCredentials: true,
+      });
+      console.log("Respuesta de /api/emailFile:", response.data);
+      if (Array.isArray(response.data)) {
+        // setVotesData(response.data);
+        calcularParticipacion(response.data);
+      } else {
+        console.error("❌ El endpoint no devolvió un array.");
+      }
+    } catch (err) {
+      console.error("Error al obtener todos los propietarios:", err);
+    }
+  };
 
   const calcularParticipacion = (data) => {
     let quorumPercentage = 0;
@@ -176,7 +183,7 @@ const DashBoardOwner = () => {
       console.log("email archivo:", data[i].participacion);
         
       if (data[i].correo.trim() === email) {
-          quorumPercentage = (parseInt(data[i].participacion) / SumItems) * 100;
+          quorumPercentage = (parseInt(data[i].participacion) / numerHouses.current) * 100;
           console.log("quorumPercentage",quorumPercentage);
           setQuorum(quorumPercentage); // Actualiza el estado del quorum
           break;
@@ -213,9 +220,6 @@ const DashBoardOwner = () => {
       } catch (error) {
           console.error('5. Error al registrar propietario:', error);
           // console.error('5.1 Error details:', error.response?.data || error.message);
-
-
-
       }
 
 

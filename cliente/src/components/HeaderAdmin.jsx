@@ -12,7 +12,7 @@ const apiUrl = API_URL;
 
 
 const Header = () => {
-    const { email, ownerData, properties, quorumPercentage  } = useContext(UserContext);
+    const { email, ownerData, quorumPercentage  } = useContext(UserContext);
     const [connectedUsers, setConnectedUsers] = useState([]);
 
     const socketRef = useRef(null);
@@ -24,6 +24,7 @@ const Header = () => {
 
     const [sesion, setSesion] = useState(null);
     const [numberHouses, setNumberHouses] = useState(0);
+
 
     useEffect(() => {
 
@@ -115,6 +116,8 @@ const Header = () => {
             console.log("📤 Emitiendo quorumCalculated:", quorumPercentage);
             socketRef.current.emit("quorumCalculated", quorumPercentage);
         }
+
+      
       return quorumPercentage;
 
     }
@@ -189,7 +192,7 @@ const Header = () => {
                     />
                 </div>
 
-                <div>
+                <div className="bg-blue-600 text-black px-6 py-2 rounded hover:bg-blue-700">
                   <button onClick={() => {
                     handleUpdateValues()
                   }}
