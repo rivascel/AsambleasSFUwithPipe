@@ -41,7 +41,7 @@ const DashBoardOwner = () => {
   const socketRef = useRef(null);
   const [participacion, setParticipacion] = useState(0); // Estado para forzar re-renderizado cuando cambie la participación
   const particRef = useRef(null); // Ref para mantener el valor actual de la participación
-  const numerHouses = useRef(null)
+  const numberHouses = useRef(null)
 
 
   useEffect(() => {
@@ -64,7 +64,7 @@ const DashBoardOwner = () => {
     }
     socketRef.current.on("sesionStarted", handleSesionStarted);
     socketRef.current.on("numberHouses", (numberHouses) => {
-      numerHouses.current = numberHouses;
+      numberHouses.current = numberHouses;
     });
 
   },[]);
@@ -125,9 +125,13 @@ const DashBoardOwner = () => {
 
   //este debe usarse cuando ingresa despues de haber iniciado la sesion, para que se registre
   useEffect(() => {
+    
+    // if (!ownerData.current) return;
+
     const handleUserConnected = async (connectedEmail) => {
       if (connectedEmail === email) {
         await socketRef.current.emit("requestJoinSesion");
+        await !!ownerData.current
         await ownerRegister(email, sesion.current);
         fetchOwners();
       };
@@ -172,7 +176,7 @@ const DashBoardOwner = () => {
   };
 
   const calcularParticipacion = (data) => {
-    let quorumPercentage = 0;
+    let participacionPercentage = 0;
     if (!data.length) return;
 
     const SumItems = data.reduce((acumulator, objeto) => acumulator + parseInt(objeto.participacion), 0);
@@ -182,10 +186,11 @@ const DashBoardOwner = () => {
       console.log("email archivo:", data[i].correo);
       console.log("email archivo:", data[i].participacion);
         
-      if (data[i].correo.trim() === email) {
-          quorumPercentage = (parseInt(data[i].participacion) / numerHouses.current) * 100;
-          console.log("quorumPercentage",quorumPercentage);
-          setQuorum(quorumPercentage); // Actualiza el estado del quorum
+      if (data[i].correo.trim() === email ) {
+          if (numberHouses.current < 0) return; 
+          participacionPercentage = (parseInt(data[i].participacion) / numberHouses.current) * 100;
+          console.log("participacionPercentage",participacionPercentage);
+          setQuorum(participacionPercentage); // Actualiza el estado del quorum
           break;
         }
         else {
