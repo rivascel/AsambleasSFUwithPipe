@@ -20,6 +20,9 @@ const AttendeesList = () => {
 
   const usersPending = useRef({});
 
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(false);
+
 
   useEffect(() => {
     const socket = getSocket(apiUrl);
@@ -95,63 +98,55 @@ const AttendeesList = () => {
 },[]);
 
 useEffect(() => {
+   if (hasLoaded) return; // Evita ejecuciones múltiples
+
   const fetchOwners = async () => {
     try {
+      setIsLoading(true);
+
       const response = await axios.get(`${apiUrl}/api/emailFile`, {
         withCredentials: true,
       });
       console.log("Respuesta de /api/emailFile en asking:", response.data);
       if (Array.isArray(response.data)) {
-        // setPendingUsersIds([response.data]);
 
-        //  pendingUsersIds.forEach((userId) => {
-        //   const owner = response.data.find(owner => owner.correo === userId);
-        //   if (owner) {
-        //     pendingUsersIds.push(owner);
-        //     console.log(`✅ pendingUsersIds: ${userId}`, pendingUsersIds);
-        //   } else {
-        //     console.warn(`⚠️ Usuario no encontrado: ${userId}`);
-        //   }
-        // }); 
+        setPendingUsersIds(prevPending => {
+          return prevPending.map((userId) => {
+             // Buscar el owner por correo
+            const owner = response.data.find(owner => owner.correo === userId);
+            
+            if (owner) {
+              console.log(`✅ Reemplazado: ${userId} -> ${owner.alias}`);
+              return owner;
+            } else {
+              console.warn(`⚠️ Usuario no encontrado: ${userId}`);
+              return userId; // Mantener el string si no se encuentra
+            }
 
-        setPendingUsersIds( pendingUsersIds.map((userId) => {
-          // Si ya es un objeto, devolverlo tal cual
-          // if (typeof userId === 'object' && userId !== null) {
-          //   return userId;
-          // }
+          });
+        });
           
-          // Buscar el owner por correo
-          const owner = response.data.find(owner => owner.correo === userId);
-          
-          if (owner) {
-            console.log(`✅ Reemplazado: ${userId} -> ${owner.alias}`);
-            return owner;
-          } else {
-            console.warn(`⚠️ Usuario no encontrado: ${userId}`);
-            return userId; // Mantener el string si no se encuentra
-          }
-        })
-      );
-
-
+      setHasLoaded(true);
       } else {
         console.error("❌ El endpoint no devolvió un array.");
       }
     } catch (err) {
       console.error("Error al obtener todos los propietarios:", err);
+    } finally {
+      setIsLoading(false);
     }
   };
   fetchOwners();
-}, [pendingUsersIds]); 
+}, [pendingUsersIds, hasLoaded]); 
 
   // Keep only the logging useEffect for debugging
-  useEffect(() => {
-    console.log("📊 Estado actual:", {
-      pendingUsersIds, 
-      hasPending,
-      loading
-    });
-  }, [pendingUsersIds, hasPending, loading]);
+  // useEffect(() => {
+  //   console.log("📊 Estado actual:", {
+  //     pendingUsersIds, 
+  //     hasPending,
+  //     loading
+  //   });
+  // }, [pendingUsersIds, hasPending, loading]);
 
 
     // Renderizado simplificado

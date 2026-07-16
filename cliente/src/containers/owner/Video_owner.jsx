@@ -40,7 +40,7 @@ const VideoGeneral = () => {
   const producersRef = useRef(new Map()); // producerId -> { socketId, kind }
   
   const remoteProducerRef = useRef(new Map()); // Para almacenar el producerId del admin
-  const consumingRef = useRef(new Map());
+  // const consumingRef = useRef(new Map());
   const consumersRef = useRef([]);
   const roleRef = useRef("owner"); // Guardar el rol actual
 
@@ -49,7 +49,7 @@ const VideoGeneral = () => {
   const myRouterIdRef = useRef(null); // Guardar mi router asignado
   const producerRouterIdRef=useRef(null);;
   const consumerRouterIdsRef=useRef(null);
-  const pendingProducersRef=useRef(new Map()); // producerId -> { socketId, kind, role }
+  // const pendingProducersRef=useRef(new Map()); // producerId -> { socketId, kind, role }
 
   const [peers, setPeers] = useState([]);
 
@@ -425,27 +425,27 @@ const stopProducing =  () => {
 
 
                 // Procesar productores pendientes
-                for (const producer of pendingProducersRef.current.values()) {
-                  console.log(
-                    "🔥 Voy a consumir",
-                    producer
-                  );
+                // for (const producer of pendingProducersRef.current.values()) {
+                //   console.log(
+                //     "🔥 Voy a consumir",
+                //     producer
+                //   );
 
-                  try {
-                    // await consume({ producerId, kind, role });
-                    await consume(producer);
+                //   try {
+                //     // await consume({ producerId, kind, role });
+                //     await consume(producer);
 
-                  } catch (err) {
+                //   } catch (err) {
 
-                    console.error(
-                      "Error consumiendo producer pendiente",
-                      producer.producerId,
-                      err
-                    );
-                  }
-                }
+                //     console.error(
+                //       "Error consumiendo producer pendiente",
+                //       producer.producerId,
+                //       err
+                //     );
+                //   }
+                // }
 
-                pendingProducersRef.current.clear();
+                // pendingProducersRef.current.clear();
                 
                 
               }
@@ -636,9 +636,10 @@ const stopProducing =  () => {
 
       } catch (err) {
         console.error("Error consumiendo producer", err);
-      } finally {
-        consumingRef.current.delete(data.producerId);
-      }
+      } 
+      // finally {
+      //   consumingRef.current.delete(data.producerId);
+      // }
     });
   };
 

@@ -33,10 +33,12 @@ const VideoGeneral = () => {
 
   const producersRef = useRef(new Map());
   const remoteProducerRef = useRef(new Map()); // Para almacenar el producerId del admin
-   const consumingRef = useRef(new Set());
+  // const consumingRef = useRef(new Set());
   const consumersRef = useRef([]);
   const roleRef = useRef("admin");
-  const pendingProducersRef=useRef(new Map()); // producerId -> { socketId, kind, role }
+  // const pendingProducersRef=useRef(new Map()); // producerId -> { socketId, kind, role }
+  const localVideoProducerRef = useRef(null);
+
 
   const imageRef = useRef(null);
 
@@ -294,13 +296,158 @@ const VideoGeneral = () => {
     });
   };
 
+  const [videoDevice, setVideoDevice] = useState([]);
+  const [selectedDevice, setSelectedDevice] = useState("");
+  
+
+  // Al cargar el componente, primero pedimos permiso y luego listamos
+  useEffect(() => {
+    const initDevices = async () => {
+      try {
+        // 1. Pedir un permiso rápido para desbloquear las etiquetas e IDs reales
+        const tempStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        
+        // 2. Detener inmediatamente ese stream temporal para no dejar la cámara encendida
+        tempStream.getTracks().forEach(track => track.stop());
+
+        // 3. Ahora sí, listar los dispositivos reales
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(d => d.kind === "videoinput");
+        
+        setVideoDevice(videoDevices);
+
+        if (videoDevices.length > 0) {
+          // Asignamos la primera cámara como seleccionada
+          setSelectedDevice(videoDevices[0].deviceId);
+        }
+      } catch (err) {
+        console.error("Error al inicializar dispositivos o denegación de permisos:", err);
+      }
+    };
+
+    initDevices();
+  }, []);
+
+  // useEffect(() => {
+  //   // Solo cambiamos en caliente si ya estamos transmitiendo (PRODUCING)
+  //   if (stateRef.current === "PRODUCING" && selectedDevice) {
+  //     changeCamera(selectedDevice);
+  //   }
+  // }, [selectedDevice]);
+
+  const changeCamera = async (targetDeviceId) => {
+    // Si por alguna razón el ID viene vacío, no hacemos nada
+    if (!targetDeviceId) {
+      console.warn("ID de dispositivo no válido para el cambio.");
+      return;
+    } 
+
+    try {
+      console.log("Solicitando cambio físico al dispositivo con ID:", targetDeviceId);
+
+      // 1. Detener por completo los tracks de video anteriores en el localRef
+      if (localRef.current && localRef.current.srcObject) {
+        const currentStream = localRef.current.srcObject;
+        const videoTracks = currentStream.getVideoTracks();
+        
+        videoTracks.forEach(track => {
+          track.stop(); // Apaga físicamente la cámara USB anterior
+          currentStream.removeTrack(track);
+        });
+      }
+
+      let newStream;
+
+      try {
+        // Intentamos abrir la cámara con total flexibilidad de formato
+
+        // 2. Pedir el nuevo stream al navegador usando estrictamente el ID seleccionado
+        newStream = await navigator.mediaDevices.getUserMedia({
+          video: { deviceId: { exact: targetDeviceId } ,
+            // Quitamos restricciones de resolución estrictas para que la cámara USB 
+              // elija su formato nativo (sea MJPEG o YUY2)
+            // Configuración ideal para tu Samsung Full HD
+            width: { min: 640, ideal: 1920, max: 1920 },
+            height: { min: 480, ideal: 1080, max: 1080 },
+            frameRate: { ideal: 30, max: 60 }
+          }
+        });
+      } catch (hdError) {
+        console.warn("No se pudo iniciar en Full HD. Intentando en HD estándar...", hdError);
+        
+        // PLAN B: Si el puerto USB o el navegador limitan el 1080p, bajamos a HD (720p)
+        try {
+          newStream = await navigator.mediaDevices.getUserMedia({
+            video: { 
+              deviceId: { exact: targetDeviceId },
+              width: { ideal: 1280 },
+              height: { ideal: 720 }
+            }
+          });
+        } catch (basicError) {
+          console.warn("Intentando compatibilidad básica...", basicError);
+          // PLAN C: Máxima compatibilidad
+          newStream = await navigator.mediaDevices.getUserMedia({
+            video: { deviceId: { exact: targetDeviceId } }
+          });
+        }
+      }
+
+      const newVideoTrack = newStream.getVideoTracks()[0];
+      console.log("Nuevo track obtenido con éxito:", newVideoTrack.label);
+
+      // 3. Asignar el nuevo track a tu vista local
+      if (localRef.current && localRef.current.srcObject) {
+        localRef.current.srcObject.addTrack(newVideoTrack);
+      } else {
+        localRef.current.srcObject = newStream;
+      }
+
+      // 4. Reemplazar el track en caliente en el Producer de MediaSoup
+      if (localVideoProducerRef.current) {
+        console.log("Reemplazando track en el MediaSoup Producer local...");
+        
+        // replaceTrack se encarga de negociar el cambio de forma transparente sin cortar la transmisión
+        await localVideoProducerRef.current.replaceTrack({ track: newVideoTrack });
+        
+        console.log("¡Transmisión redirigida a la nueva cámara!");
+      } else {
+        console.warn("No se encontró un productor de video activo para reemplazar el track.");
+      }
+
+    } catch (error) {
+      console.error("Error al cambiar de cámara:", error);
+    }
+  };
+
   // produce (clave)
   const produce = async () => {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: true,
-      audio: true,
-    });
-    localRef.current.srcObject = stream;
+    let stream;
+
+    try {
+      // Detener tracks anteriores si el elemento de video ya tiene algo reproduciendo
+      if (localRef.current && localRef.current.srcObject) {
+        localRef.current.srcObject.getTracks().forEach(t => t.stop());
+      }
+    
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          deviceId: { exact: selectedDevice }
+        },
+        audio: true
+      });
+
+      console.log(stream);
+      console.log(stream instanceof MediaStream);
+      console.log(typeof stream);
+
+      localRef.current.srcObject = stream;
+
+
+    } catch (err) {
+      console.error(err);
+      return;
+    }
 
     for (const track of stream.getTracks()) {
       const isVideo = track.kind === "video";
@@ -317,17 +464,15 @@ const VideoGeneral = () => {
           peerId: socketRef.current.id,            // Metadata adicional
         } 
       });
-      //  producersRef.current.set(producer.id, {socketId: socketRef.current.id, kind: track.kind });
-        // console.log("producersRef en produce", producersRef)
-      //  console.log("🎥 Producer creado:", producer.id, "kind:", track.kind);
-      //  console.log(producersRef.current.has(producer));      // true
-        // console.log(producersRef.current.has(producer.id));   // false
 
-        //igual al de cliente
-        // producersRef.current.set(producer, {socketId: socketRef.current.id, kind: track.kind });
-        producersRef.current.set(producer.id, {socketId: socketRef.current.id, kind: track.kind });
-        console.log("producersRef en produce", producersRef)
+      // --- AQUÍ GUARDAS TU PRODUCTOR LOCAL DE VIDEO ---
+      if (isVideo) {
+        localVideoProducerRef.current = producer; 
+        console.log("🎥 Instancia del Producer de Video guardada localmente:", producer.id);
+      }
 
+      producersRef.current.set(producer.id, {socketId: socketRef.current.id, kind: track.kind });
+      console.log("producersRef en produce", producersRef)
     }
     
     console.log("🎥 Produciendo...");
@@ -383,23 +528,23 @@ const VideoGeneral = () => {
           setState("RECV_TRANSPORT_READY");
 
           // Procesar productores pendientes
-          for (const producer of pendingProducersRef.current.values()) {
-              console.log("🔥 Voy a consumir", producer);
+          // for (const producer of pendingProducersRef.current.values()) {
+          //     console.log("🔥 Voy a consumir", producer);
 
-            try {
-              // await consume({ producerId, kind, role });
-              await consume(producer);
+          //   try {
+          //     // await consume({ producerId, kind, role });
+          //     await consume(producer);
 
-            } catch (err) {
+          //   } catch (err) {
 
-              console.error(
-                "Error consumiendo producer pendiente",
-                producer.producerId,
-                err
-              );
-            }
-          }
-          pendingProducersRef.current.clear();
+          //     console.error(
+          //       "Error consumiendo producer pendiente",
+          //       producer.producerId,
+          //       err
+          //     );
+          //   }
+          // }
+          // pendingProducersRef.current.clear();
         }
           
 
@@ -447,9 +592,7 @@ const VideoGeneral = () => {
     setState("CONSUMING_EXISTING");
   };
 
- 
-
-    const consume = async ({producerId, kind, role}) => {
+  const consume = async ({producerId, kind, role}) => {
 
     try {
       const data = await new Promise((resolve, reject) => {
@@ -483,139 +626,139 @@ const VideoGeneral = () => {
 
   // Función auxiliar para crear y configurar el consumer
   
-const createAndSetupConsumer = async (consumerData) => {
-    // Limpiar consumer existente del mismo tipo
-    const existingConsumer = consumersRef.current.find(
-      c => c.kind === consumerData.kind && c.producerRole === consumerData.role
-    );
-
-    if (existingConsumer) {
-      existingConsumer.close();
-      consumersRef.current = consumersRef.current.filter(
-        c => c.id !== existingConsumer.id
+  const createAndSetupConsumer = async (consumerData) => {
+      // Limpiar consumer existente del mismo tipo
+      const existingConsumer = consumersRef.current.find(
+        c => c.kind === consumerData.kind && c.producerRole === consumerData.role
       );
-    }
-    
-    // Crear consumer con el transport (puede ser el mismo recvTransport)
-    const consumer = await recvTransportRef.current.consume({ 
-      id: consumerData.id,
-      producerId: consumerData.producerId,
-      kind: consumerData.kind,
-      rtpParameters: consumerData.rtpParameters,
-      role: consumerData.role,
-    });
 
-    console.log(`🎥 Consumer creado (${consumerData.isPipe ? 'vía pipe' : 'directo'})`);
-    console.log("🎥 kind:", consumerData.kind);
-    console.log("🎥 track:", consumer.track.kind);
-    console.log("🎥 role:", consumerData.role);
-
-    // Resumir el consumer
-    await new Promise((resolve) => {
-      socketRef.current.emit("resume-consumer", { consumerId: consumer.id }, resolve ); });
-
-    consumer.producerRole = consumerData.role;
-    consumersRef.current.push(consumer);
-
-  
-    // const targetVideo = consumer.producerRole === "admin" ? localRef.current : remoteRef.current;
-    const targetVideo = remoteRef.current;
-
-    if (!targetVideo.srcObject) {
-      setIsLiveOwner(true);
-      console.log("4. creando MediaStream");
-      targetVideo.srcObject = new MediaStream();
-    }
-
-    const stream = targetVideo.srcObject;
-
-    // Eliminar tracks antiguos del mismo tipo
-    stream.getTracks().filter(t => t.kind === consumerData.kind)
-                 .forEach(t => stream.removeTrack(t));
-    
-
-    // Agregar el nuevo track
-    stream.addTrack(consumer.track);
-
-    // Configurar y reproducir el remote cuando recibe del producto admin
-    // 9. Reproducir
-    try {
-      targetVideo.muted = true;
-      targetVideo.playsInline = true;
-      await targetVideo.play();
-      console.log(`▶️ Reproducción iniciada: ${consumerData.kind} [${consumerData.role}]`);
-    } catch (err) {
-      if (err.name !== "AbortError") {
-        console.error("Error de reproducción:", err);
+      if (existingConsumer) {
+        existingConsumer.close();
+        consumersRef.current = consumersRef.current.filter(
+          c => c.id !== existingConsumer.id
+        );
       }
-    }
       
-    console.log(`✅ Track ${consumerData.kind} listo. Total tracks:`, stream.getTracks().length);
+      // Crear consumer con el transport (puede ser el mismo recvTransport)
+      const consumer = await recvTransportRef.current.consume({ 
+        id: consumerData.id,
+        producerId: consumerData.producerId,
+        kind: consumerData.kind,
+        rtpParameters: consumerData.rtpParameters,
+        role: consumerData.role,
+      });
 
-    return consumer;
-  };
+      console.log(`🎥 Consumer creado (${consumerData.isPipe ? 'vía pipe' : 'directo'})`);
+      console.log("🎥 kind:", consumerData.kind);
+      console.log("🎥 track:", consumer.track.kind);
+      console.log("🎥 role:", consumerData.role);
 
+      // Resumir el consumer
+      await new Promise((resolve) => {
+        socketRef.current.emit("resume-consumer", { consumerId: consumer.id }, resolve ); });
 
- const listenForNewProducers = () => {
+      consumer.producerRole = consumerData.role;
+      consumersRef.current.push(consumer);
+
     
-    socketRef.current.on("new-producer", async (data) => {
+      // const targetVideo = consumer.producerRole === "admin" ? localRef.current : remoteRef.current;
+      const targetVideo = remoteRef.current;
 
-      if (remoteProducerRef.current.has(data.producerId)) return;
-
-      try {
-        console.log("rol del productor que esta transmitiendo", data.role);
-
-        remoteProducerRef.current.set(data.producerId, {
-          kind: data.kind,
-          role: data.role
-        } );
-
-
-        const producerData = remoteProducerRef.current.get(data.producerId);
-        if (producerData) {
-          const { kind, role } = producerData; 
-          console.log("role en admin", role);
-        }
-
-
-        console.log(`oye tengo un productor nuevo con rol ${data.producerId} ${data.role}  ` );
-
-
-        await consume({
-          producerId:data.producerId, 
-          kind: data.kind, 
-          role: data.role
-        });
-
-      } catch (err) {
-        console.error("Error consumiendo producer", err);
-      } finally {
-        consumingRef.current.delete(data.producerId);
+      if (!targetVideo.srcObject) {
+        setIsLiveOwner(true);
+        console.log("4. creando MediaStream");
+        targetVideo.srcObject = new MediaStream();
       }
-    });
+
+      const stream = targetVideo.srcObject;
+
+      // Eliminar tracks antiguos del mismo tipo
+      stream.getTracks().filter(t => t.kind === consumerData.kind)
+                  .forEach(t => stream.removeTrack(t));
+      
+
+      // Agregar el nuevo track
+      stream.addTrack(consumer.track);
+
+      // Configurar y reproducir el remote cuando recibe del producto admin
+      // 9. Reproducir
+      try {
+        targetVideo.muted = true;
+        targetVideo.playsInline = true;
+        await targetVideo.play();
+        console.log(`▶️ Reproducción iniciada: ${consumerData.kind} [${consumerData.role}]`);
+      } catch (err) {
+        if (err.name !== "AbortError") {
+          console.error("Error de reproducción:", err);
+        }
+      }
+        
+      console.log(`✅ Track ${consumerData.kind} listo. Total tracks:`, stream.getTracks().length);
+
+      return consumer;
   };
 
-const updateConsumers = () => {
-  if (!consumersRef.current.length) return;
+  const listenForNewProducers = () => {
+      
+      socketRef.current.on("new-producer", async (data) => {
 
-  consumersRef.current.forEach((consumer) => {
-    if (!isVisible) {
-      socketRef.current.emit("pause-consumer", {
+        if (remoteProducerRef.current.has(data.producerId)) return;
+
+        try {
+          console.log("rol del productor que esta transmitiendo", data.role);
+
+          remoteProducerRef.current.set(data.producerId, {
+            kind: data.kind,
+            role: data.role
+          } );
+
+
+          const producerData = remoteProducerRef.current.get(data.producerId);
+          if (producerData) {
+            const { kind, role } = producerData; 
+            console.log("role en admin", role);
+          }
+
+
+          console.log(`oye tengo un productor nuevo con rol ${data.producerId} ${data.role}  ` );
+
+
+          await consume({
+            producerId:data.producerId, 
+            kind: data.kind, 
+            role: data.role
+          });
+
+        } catch (err) {
+          console.error("Error consumiendo producer", err);
+        } 
+        // finally {
+        //   // consumingRef.current.delete(data.producerId);
+        // }
+      });
+  };
+
+  const updateConsumers = () => {
+    if (!consumersRef.current.length) return;
+
+    consumersRef.current.forEach((consumer) => {
+      if (!isVisible) {
+        socketRef.current.emit("pause-consumer", {
+          consumerId: consumer.id,
+        });
+        return;
+      }
+
+      socketRef.current.emit("resume-consumer", {
         consumerId: consumer.id,
       });
-      return;
-    }
 
-    socketRef.current.emit("resume-consumer", {
-      consumerId: consumer.id,
+      socketRef.current.emit("set-quality", {
+        consumerId: consumer.id,
+        quality,
+      });
     });
-
-    socketRef.current.emit("set-quality", {
-      consumerId: consumer.id,
-      quality,
-    });
-  });
-};
+  };
 
   //==============================USE EFFECTS==============================
   useEffect(() => {
@@ -682,6 +825,7 @@ const updateConsumers = () => {
       console.error("Error al colgar llamada:", error);
     }
   };
+
     
   return (
     <div className="space-y-6">
@@ -714,12 +858,37 @@ const updateConsumers = () => {
               Iniciar transmisión
             </button> 
             ):(
+              <>
             <button
               onClick={hangUpBroadcasting}
               className="bg-red-600 text-blue px-6 py-2 rounded hover:bg-red-700 disabled:bg-gray-400"
             >
               Detener transmisión
             </button>  
+
+            <select
+              value={selectedDevice}
+              onChange={(e)=>{
+                const newId = e.target.value;
+                setSelectedDevice(newId);
+                changeCamera(newId);
+              }}
+                
+                // setSelectedDevice(e.target.value)}
+
+              // onClick={changeDevices}
+              className="bg-red-600 text-blue px-6 py-2 rounded hover:bg-red-700 disabled:bg-gray-400"
+            >
+              {videoDevice.map(device => (
+                <option key={device.deviceId} value={device.deviceId}
+                >
+                  {device.label || `Cámara ${device.deviceId.slice(0, 5)}` }
+                                {/* Cambiar camara */}
+                </option>
+              ))}
+
+            </select>  
+            </>
             )
           }
         </div>
