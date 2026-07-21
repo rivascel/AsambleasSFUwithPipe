@@ -1,7 +1,7 @@
+{"alias":"Revisor Fiscal","correo":"revisor@gmail.com","interior":"Revisor","apto":"XX","participacion":0}
 {"alias":"Int 14 apto 101","correo":"rivascel@gmail.com","interior":"14","apto":"101","participacion":2}
 {"alias":"Int 50 apto 102","correo":"techprocess.sas@gmail.com","interior":"50","apto":"102","participacion":0}
 {"alias":"Int 65 apto 502","correo":"rivas@hotmail.com","interior":"65","apto":"502","participacion":1}
 {"alias":"Int 34 apto 302","correo":"gfgfg@gmail.com","interior":"34","apto":"302","participacion":1}
 {"alias":"Int 32 apto 301","correo":"gfgfgkjh@gmail.com","interior":"32","apto":"301","participacion":1}
-{"alias":"Int 28 apto 201","correo":"rivascel@hotmail.com","interior":"28","apto":"201","participacion":1}
 {"alias":"Int 54 apto 401","correo":"riv@hotmail.com","interior":"54","apto":"401","participacion":1}

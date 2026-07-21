@@ -76,6 +76,7 @@ const Header = () => {
             withCredentials: true,
           });
           if (Array.isArray(response.data)) {
+
             ownerDataRef.current = response.data; 
             calcularQuorum(response.data);
 
@@ -105,9 +106,9 @@ const Header = () => {
 
       const quorumPercentage = (SumItems / currentNumberHouses) * 100;
       
-      console.log("SumItems:", SumItems);
-      console.log("numberHouses:", currentNumberHouses);
-      console.log("quorumPercentage:", quorumPercentage);
+      // console.log("SumItems:", SumItems);
+      // console.log("numberHouses:", currentNumberHouses);
+      // console.log("quorumPercentage:", quorumPercentage);
       
       setQuorum(quorumPercentage);
       

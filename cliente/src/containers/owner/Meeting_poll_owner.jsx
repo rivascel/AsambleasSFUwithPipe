@@ -10,48 +10,48 @@ const PollManage = () => {
   const socketRef = useRef(null);
 
 
-      useEffect(() => {
-        const socket = getSocket(apiUrl);
-        socketRef.current = socket;
-        
-        // socketRef.current.on("connect", () => {
-        //   console.log("🟢 Conectado:", socketRef.current.id);
-        // });
-      },[]);
-
-    const [decisionText, setDecisionText] = useState("Propuesta de ejemplo para ser votada.");
-    const [displayTime, setDisplayTime] = useState("00:00");
-    const { setVotingEnabled } = useContext(UserContext);
-    let flag = false;
-  
-    useEffect(() => {
-      socketRef.current.on('receive-decision', (text) => {
-        setDecisionText(text);
-      });
-
-      socketRef.current.on('update-cronometer', ({ time }) => {
-        if (!flag) {
-          setVotingEnabled(true);
-          setDisplayTime(time); // Necesitas un estado displayTime
-          flag = true;
-          return;
-          } 
-      });
-
-      socketRef.current.on('end-cronometer', () => {
-        alert("Tiempo terminado");
-        flag=false;
-        setVotingEnabled(false);
-    });  
+  useEffect(() => {
+    const socket = getSocket(apiUrl);
+    socketRef.current = socket;
     
+    // socketRef.current.on("connect", () => {
+    //   console.log("🟢 Conectado:", socketRef.current.id);
+    // });
+  },[]);
 
-      // Limpieza para evitar múltiples listeners
-      return () => {
-        socketRef.current.off('receive-decision');
-        socketRef.current.off('update-cronometer');
-        socketRef.current.off('end-cronometer');
-      };
-    }, []);
+  const [decisionText, setDecisionText] = useState("Propuesta de ejemplo para ser votada.");
+  const [displayTime, setDisplayTime] = useState("00:00");
+  const { setVotingEnabled } = useContext(UserContext);
+  let flag = false;
+
+  useEffect(() => {
+    socketRef.current.on('receive-decision', (text) => {
+      setDecisionText(text);
+    });
+
+    socketRef.current.on('update-cronometer', ({ time }) => {
+      if (!flag) {
+        setVotingEnabled(true);
+        setDisplayTime(time); // Necesitas un estado displayTime
+        flag = true;
+        return;
+        } 
+    });
+
+    socketRef.current.on('end-cronometer', () => {
+      alert("Tiempo terminado");
+      flag=false;
+      setVotingEnabled(false);
+  });  
+  
+
+    // Limpieza para evitar múltiples listeners
+    return () => {
+      socketRef.current.off('receive-decision');
+      socketRef.current.off('update-cronometer');
+      socketRef.current.off('end-cronometer');
+    };
+  }, []);
 
     return (
         <div className="meeting__polling">
@@ -69,7 +69,7 @@ const PollManage = () => {
                   <canvas id="results" width="300" height="200"></canvas>
                   <div id="statical" hidden></div>
             </div>
-        </div>
+      </div>
     );
 };
 export default PollManage;

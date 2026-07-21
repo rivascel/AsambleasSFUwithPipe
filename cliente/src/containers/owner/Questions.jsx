@@ -45,13 +45,18 @@ const Questions = () => {
     const value = e.target.value;
     setVotingEnabled(false); // Deshabilita la votación después de votar
 
-    const nuevoVoto = {
-      interior: ownerData.interior,
-      apartamento: ownerData.apartamento,
-      correo: email,
-      proposicion: decision, 
-      valor: parseInt(value),
-    };
+
+    
+    //solo pueden votar los que tienen participacion, es decir, son propietarios
+    if (ownerData.participacion !== 0) {
+      const nuevoVoto = {
+        interior: ownerData.interior,
+        apartamento: ownerData.apartamento,
+        correo: email,
+        proposicion: decision, 
+        valor: parseInt(value),
+      };
+    }
     setSelected(null); //despues de registrar el voto, select pasa a null
 
     await axios.post(`${apiUrl}/api/votacion`, nuevoVoto)

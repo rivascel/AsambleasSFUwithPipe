@@ -60,39 +60,42 @@ export default async function sendMagicLink(to, role, token) {
   //   return { success: false };
   // }
 
-  try {
-    const data = await transporter.sendMail({
-      
-      from: '"Asamblea General" <${process.env.SMTP_USER}>', // O tu correo verificado
-      to: to,
-      subject: 'Tu enlace mágico de acceso de ' + role,
-      html: `
-        <p>Hola 👋</p>
-        <p>Haz clic en el siguiente enlace para iniciar sesión:</p>
-        <a href="${magicLink}" style="
-          display: inline-block;
-          background-color: #007bff;
-          color: white;
-          padding: 12px 24px;
-          text-decoration: none;
-          border-radius: 5px;
-          font-weight: bold;
+  // if (magicLink) {
+    try {
+      const data = await transporter.sendMail({
         
+        from: '"Asamblea General" <${process.env.SMTP_USER}>', // O tu correo verificado
+        to: to,
+        subject: 'Tu enlace mágico de acceso de ' + role,
+        html: `
+          <p>Hola 👋</p>
+          <p>Haz clic en el siguiente enlace para iniciar sesión:</p>
+          <a href="${magicLink}" style="
+            display: inline-block;
+            background-color: #007bff;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
           
-        ">Acceso a la asamblea</a>
-        <a>${magicLink}</a>
-   
-        <p>Este enlace expira en 15 minutos.</p>
-      `,
-    });
-    console.log('Correo enviado:', data);
+            
+          ">Acceso a la asamblea</a>
+          <a>${magicLink}</a>
     
-    return { success: true };
-  } catch (error) {
-    console.error('Error al enviar el correo:', error);
-    return { success: false };
-  }
-
+          <p>Este enlace expira en 15 minutos.</p>
+        `,
+      });
+      console.log('Correo enviado:', data);
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Error al enviar el correo:', error);
+      return { success: false };
+    }
+  // } else {
+  //   console.error("no se envio enlace")
+  // }
 
 
 

@@ -3,6 +3,7 @@ import { io } from "socket.io-client";
 import { UserContext } from "../components/UserContext";
 import AppContext from '../context/AppContext';
 import { getSocket  } from "../hooks/socket";
+import Title from '../components/components/Title';
 
 const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_URL_LOCAL; 
 const apiUrl = API_URL;
@@ -67,7 +68,8 @@ const Chat = () => {
 
   return (
     <div className="bg-white p-4 rounded shadow-md">
-      <h2 className="text-xl font-semibold mb-4">Comentarios de los asistentes</h2>
+      {/* <h2 className="text-xl font-semibold mb-4">Comentarios de los asistentes</h2> */}
+      <Title>Comentarios de los asistentes</Title>
 
       <div className="flex justify-between items-center mb-4">
         <p className="text-sm text-red-600">

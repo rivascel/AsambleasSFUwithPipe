@@ -42,7 +42,7 @@ const Graph = () => {
 
   return (
     <div className="bg-white p-4 rounded shadow-md">
-      <h2 className="text-xl font-semibold mb-4">Resultados Votación</h2>
+      <h2 className="text-xl font-semibold mb-4 text-teal-600">Resultados Votación</h2>
       <Bar data={data} options={options} />
     </div>
   );

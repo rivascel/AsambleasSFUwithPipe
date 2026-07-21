@@ -82,7 +82,10 @@ router.get("/emailFile", (req, res)=>{
             const lines = data.split('\n') // Dividir por líneas
                 .filter(line => line.trim() !== '') // Eliminar líneas vacías
                 .map(line => JSON.parse(line)); // Parsear cada línea como JSON
-            res.json(lines);
+
+            const filteredLines = lines.filter(item => item.participacion !== 0);
+
+            res.json(filteredLines);
             // console.log("Archivo de correos leído y parseado correctamente.", lines);
         } catch (parseError) {
             console.error('Error al parsear los datos:', parseError);

@@ -6,16 +6,20 @@ import { listenToUserRequests, requestToJoinRoom, getPendingRequest, getPendingR
   getApprovedUserById, deleteCandidate /*ApprovedUserQuery,approveUser*/ } from '../../supabase-client';
 import AppContext from '../../context/AppContext';
 import { getSocket  } from "../../hooks/socket";
+import Button from '../../components/components/Button/';
+import Title from '../../components/components/Title';
 
 const AskToParticipate = () => {
   const { apiUrl } = useContext(AppContext);
-
+  
   const socketRef = useRef(null);
   const roomId = 'main-room';
   const [loading, setLoading] = useState(true);
+  const [displayTime, setDisplayTime] = useState("00:00");
   const { email, setCheckApprove } = useContext(UserContext);
   const [requestStatus, setRequestStatus] = useState(() => {
   const saved = localStorage.getItem("requestStatus");
+  let flag = false;
   
   // console.log("💾 [AskToParticipate] Estado cargado de localStorage:", saved);
   if (!saved || saved === "undefined") return "none";
@@ -23,14 +27,14 @@ const AskToParticipate = () => {
   });
 
 
-      useEffect(() => {
-        const socket = getSocket(apiUrl);
-        socketRef.current = socket;
-        
-        // socketRef.current.on("connect", () => {
-        //   console.log("🟢 Conectado:", socketRef.current.id);
-        // });
-      },[]);
+  useEffect(() => {
+    const socket = getSocket(apiUrl);
+    socketRef.current = socket;
+    
+    // socketRef.current.on("connect", () => {
+    //   console.log("🟢 Conectado:", socketRef.current.id);
+    // });
+  },[]);
 
   useEffect(() => {
     localStorage.setItem("requestStatus", requestStatus);
@@ -136,9 +140,35 @@ const AskToParticipate = () => {
     }
   };
 
+ useEffect(() => {
+
+  socketRef.current.on('update-cronometer', ({ time }) => {
+    if (!flag) {
+      setCheckApprove(true);
+      setDisplayTime(time); // Necesitas un estado displayTime
+      flag = true;
+      return;
+      } 
+  });
+
+    socketRef.current.on('end-cronometer', () => {
+      alert("Tiempo terminado");
+      setCheckApprove(false);
+      flag=false;
+  });  
+
+
+  // Limpieza para evitar múltiples listeners
+  return () => {
+    socketRef.current.off('update-cronometer');
+    socketRef.current.off('end-cronometer');
+  };
+}, []);
+
   return (
     <div className="bg-white p-4 rounded shadow-md text-center">
-      <h3 className="text-lg font-semibold mb-4">¿Solicitudes enviadas?</h3>
+      {/* <h3 className="text-lg font-semibold mb-4 text-teal-600">¿Solicitudes enviadas?</h3> */}
+      <Title>¿Solicitudes enviadas?</Title>
 
       {loading ? (
         <p> Cargando </p>
@@ -151,12 +181,12 @@ const AskToParticipate = () => {
                 return (
                   <>
                     <p className="text-red-600 mb-2">No has enviado ninguna solicitud.</p>
-                    <button 
+                    <Button 
                       onClick={handleRequest} 
                       className="bg-blue-600 text-black px-6 py-2 rounded hover:bg-blue-700"
                     >
                       Solicitar participación
-                    </button>
+                    </Button>
                   </>
                 );
               
@@ -177,6 +207,21 @@ const AskToParticipate = () => {
                 return (
                   <>
                     <p className="text-green-600 font-medium">¡Tu solicitud ha sido aprobada! Puedes activar la cámara</p>
+
+                    <div className="meeting__polling">
+                      <div className="meeting__polling--cronometer">
+                        <h3 className="text-red-600 mb-2">Cronometro: {displayTime}</h3>
+                        {/* {votingEnabled ? (
+                          <p>Opciones habilitadas</p>
+                        ) : (
+                          <p>Esperando inicio del cronómetro o ya terminó.</p>
+                        )} */}
+
+                      </div>
+                      
+                    </div>
+
+
                   </>
                 );
               

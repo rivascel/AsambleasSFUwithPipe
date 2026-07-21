@@ -9,6 +9,7 @@ import * as mediasoupClient from "mediasoup-client";
 import useVideoQuality from "../../hooks/useVideoQuality";
 import useVisibility from "../../hooks/useVisibility";
 import { useRoomState } from "../../hooks/useRoomState";
+import Title from "../../components/components/Title";
 
 // import {image} from "../../assets/img/sin_senal";
 
@@ -26,7 +27,7 @@ const VideoGeneral = () => {
   const isVisible = useVisibility(remoteRef);
   const [currentQuality, setCurrentQuality] = useState(null);
 
-  const { email, ownerData, login, checkApprove } = useContext(UserContext);
+  const { email, ownerData, login, checkApprove, setCheckApprove } = useContext(UserContext);
   const [stream, setStream] = useState(false);
   const roomId="main-room";
   const [remote, setRemote] = useState(false);
@@ -740,7 +741,8 @@ const stopProducing =  () => {
       <div className="bg-white p-4 rounded shadow-md">
 
         <div>
-          <h2 className="text-xl font-semibold mb-2">Asamblea en vivo</h2>
+          {/* <h2 className="text-xl font-semibold mb-2 text-teal-600">Asamblea en vivo</h2> */}
+          <Title>Asamblea en vivo</Title>
           {/* <video ref={remoteRef} autoPlay playsInline muted={true} className="w-full rounded border"></video> */}
           
           <div 
@@ -755,7 +757,8 @@ const stopProducing =  () => {
                 />
           </div>
 
-          <h2 className="text-xl font-semibold mb-2">Intervención asambleista</h2>
+          {/* <h2 className="text-xl font-semibold mb-2 text-teal-600">Intervención asambleista</h2> */}
+          <Title>Intervención asambleista</Title>
           <div 
           // style={{ width: '100%', aspectRatio: '16/9', backgroundColor: '#1a1a1a' }}
           className="rounded overflow-hidden">
@@ -770,7 +773,8 @@ const stopProducing =  () => {
           </div>
         </div>
 
-        <h2 className="text-xl font-semibold mb-2">Intervención del copropietario</h2>
+        {/* <h2 className="text-xl font-semibold mb-2 text-teal-600">Intervención del copropietario</h2> */}
+        <Title>Intervención del copropietario</Title>
         {viewerReady && stream ? (
           <>
             <video ref={localRef} autoPlay playsInline className="w-full rounded border" 

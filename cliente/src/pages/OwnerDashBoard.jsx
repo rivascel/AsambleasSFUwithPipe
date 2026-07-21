@@ -11,6 +11,7 @@ import Questions from '../containers/owner/Questions';
 import { UserContext } from "../components/UserContext";
 import AppContext from '../context/AppContext';
 import { getSocket  } from "../hooks/socket";
+import Title from '../components/components/Title';
 
 const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_URL_LOCAL; 
 const apiUrl = API_URL;
@@ -23,7 +24,7 @@ if (!apiUrl) {
 
 const Section = ({ title, children }) => (
   <div className="bg-white p-4 rounded-lg shadow-md">
-    <h2 className="text-xl font-semibold mb-2">{title}</h2>
+    <h2 className="text-xl text-center text-emerald-400 font-semibold mb-2 ">{title}</h2>
     <div>{children}</div>
   </div>
 );
@@ -245,8 +246,9 @@ const DashBoardOwner = () => {
 
   return (
     <>
-      <div className="p-6 bg-gray-100 min-h-screen">
-        <h1 className="text-3xl font-bold mb-6">Bienvenido al panel del propietario</h1>
+      <div className=" p-6 bg-green-100 min-h-screen ">
+        <h1 className="text-3xl font-bold mb-6 text-cyan-500 text-center">Bienvenido al panel del propietario</h1>
+
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <Section title="Transmisión General">
