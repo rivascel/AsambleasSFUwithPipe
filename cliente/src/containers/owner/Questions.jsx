@@ -12,43 +12,44 @@ const Questions = () => {
   // const { apiUrl } = useContext(AppContext);
   const socketRef = useRef(null);
 
-      useEffect(() => {
-        const socket = getSocket(apiUrl);
-        socketRef.current = socket;
-        
-        // socketRef.current.on("connect", () => {
-        //   console.log("🟢 Conectado:", socketRef.current.id);
-        // });
-      },[]);
+  useEffect(() => {
+    const socket = getSocket(apiUrl);
+    socketRef.current = socket;
+    
+    // socketRef.current.on("connect", () => {
+    //   console.log("🟢 Conectado:", socketRef.current.id);
+    // });
+  },[]);
 
   const [selected, setSelected] = useState(null);
   const [decisionText, setDecisionText] = useState("");
   const { email, ownerData } = useContext(UserContext);
-  // const [votingEnabled, setVotingEnabled] = useState(false); // Cambia a true cuando debas habilitar la votación
-  const { votingEnabled, setVotingEnabled  } = useContext(UserContext);
-
+  const [voting, setVoting] = useState(false); // Cambia a true cuando debas habilitar la votación
+  // const { setVotingEnabled  } = useContext(UserContext);
 
   useEffect(() => {
       socketRef.current.on('receive-decision', text => {
         setDecisionText(text);
       });
 
+      socketRef.current.on("inicioVotacion", text=>{
+        setVoting(text);
+      });
       // Limpieza para evitar múltiples listeners
       return () => {
         socketRef.current.off('receive-decision');
+        socketRef.current.off('inicioVotacion');
       };
     }, []);
 
     //de userContext, votingEnabled viene falso.
   const handleVoteChange = async (e, decision) => {
-    if (!votingEnabled) return;
+    // if (!votingEnabled) return;
     const value = e.target.value;
-    setVotingEnabled(false); // Deshabilita la votación después de votar
-
-
+    setVoting(false); //deshabilita la votacion
     
     //solo pueden votar los que tienen participacion, es decir, son propietarios
-    if (ownerData.participacion !== 0) {
+    // if (ownerData.participacion !== 0) {
       const nuevoVoto = {
         interior: ownerData.interior,
         apartamento: ownerData.apartamento,
@@ -56,7 +57,7 @@ const Questions = () => {
         proposicion: decision, 
         valor: parseInt(value),
       };
-    }
+    // }
     setSelected(null); //despues de registrar el voto, select pasa a null
 
     await axios.post(`${apiUrl}/api/votacion`, nuevoVoto)
@@ -78,7 +79,7 @@ const Questions = () => {
         />
       </div>
 
-      {votingEnabled ? (
+      {voting ? (
         <p className="text-green-600">¡Puedes votar ahora! ✅</p>
       ) : (
         <p className="text-red-400">La votación aún no está habilitada ⏳</p>
@@ -93,7 +94,7 @@ const Questions = () => {
               type="radio"
               name="myRadio"
               value="1"
-              disabled={!votingEnabled}
+              disabled={!voting}
               checked={selected === "1"}
               onChange={ (e) => handleVoteChange(e, decisionText)}
             />{" "}
@@ -104,7 +105,7 @@ const Questions = () => {
               type="radio"
               name="myRadio"
               value="2"
-              disabled={!votingEnabled}
+              disabled={!voting}
               checked={selected === "2"}
               onChange={ (e) => handleVoteChange(e, decisionText) } 
             />{" "}
@@ -115,7 +116,7 @@ const Questions = () => {
               type="radio"
               name="myRadio"
               value="0"
-              disabled={!votingEnabled}
+              disabled={!voting}
               checked={selected === "0"}
               onChange={ (e) => handleVoteChange(e, decisionText) }
             />{" "}

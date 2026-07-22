@@ -19,7 +19,7 @@ const AskToParticipate = () => {
   const { email, setCheckApprove } = useContext(UserContext);
   const [requestStatus, setRequestStatus] = useState(() => {
   const saved = localStorage.getItem("requestStatus");
-  let flag = false;
+  let flag;
   
   // console.log("💾 [AskToParticipate] Estado cargado de localStorage:", saved);
   if (!saved || saved === "undefined") return "none";
@@ -143,18 +143,18 @@ const AskToParticipate = () => {
  useEffect(() => {
 
   socketRef.current.on('update-cronometer', ({ time }) => {
-    if (!flag) {
+    // if (!flag) {
       setCheckApprove(true);
       setDisplayTime(time); // Necesitas un estado displayTime
-      flag = true;
+      // flag = true;
       return;
-      } 
+      // } 
   });
 
     socketRef.current.on('end-cronometer', () => {
       alert("Tiempo terminado");
       setCheckApprove(false);
-      flag=false;
+      // flag=false;
   });  
 
 

@@ -43,3 +43,5 @@
 {"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"propuesta nueva","valor":2}
 {"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"","valor":1}
 {"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"Propuesta de ejemplo para ser votada.1","valor":1}
+{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"Propuesta de ejemplo para ser votada.","valor":1}
+{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"Propuesta de ejemplo para ser votada.2","valor":1}

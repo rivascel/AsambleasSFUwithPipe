@@ -10,16 +10,7 @@ const PollingManage = () => {
     const { apiUrl } = useContext(AppContext);
     const socketRef = useRef(null);
 
-
-        useEffect(() => {
-          const socket = getSocket(apiUrl);
-          socketRef.current = socket;
-          
-        //   socketRef.current.on("connect", () => {
-        //     console.log("🟢 Conectado:", socketRef.current.id);
-        //   });
-        },[]);
-
+    
     const intervalo = useRef(null);
 
     const [finalMinute, setFinalMinute] = useState(0);
@@ -27,14 +18,27 @@ const PollingManage = () => {
     const { decisionText, setApprovalVotes, setRejectVotes, setBlankVotes, setVotingEnabled } = useContext(UserContext);
 
 
+    useEffect(() => {
+        const socket = getSocket(apiUrl);
+        socketRef.current = socket;
+        
+    //   socketRef.current.on("connect", () => {
+    //     console.log("🟢 Conectado:", socketRef.current.id);
+    //   });
+    },[]);
+
     const initCronometer = () => {
         let minute = 0;
         let second = 0;
         setDisplayTime("00:00");
+        setVotingEnabled(true);
 
         socketRef.current.emit('start-cronometer', { 
             time: `${minute}:00` 
+            
         });
+
+        socketRef.current.emit("inicioVotacion", true);
 
         intervalo.current = setInterval(()=>{
             second++;
@@ -56,6 +60,7 @@ const PollingManage = () => {
             // Actualizar el cronómetro
             const time = mAux + ":" + sAux;
             setDisplayTime(time);
+
 
             // Enviar el cronómetro actualizado a los clientes
             socketRef.current.emit('update-cronometer', { time });
@@ -80,8 +85,8 @@ const PollingManage = () => {
             const ownerData = res.data;
     
             if (!Array.isArray(votesData) && !Array.isArray(ownerData)) {
-                        throw new Error("La respuesta del servidor no es un arreglo.");
-                }
+                throw new Error("La respuesta del servidor no es un arreglo.");
+            }
     
             for (let i = 0; i < votesData.length; i++) {
                 let vote = votesData[i];
@@ -93,8 +98,8 @@ const PollingManage = () => {
                 
                 for (let j = 0; j < ownerData.length; j++) { 
                     if ( typeof votesData[i].correo === 'string' &&
-                         typeof ownerData[j].correo === 'string' &&
-                         votesData[i].correo.trim() === ownerData[j].correo.trim()) {
+                        typeof ownerData[j].correo === 'string' &&
+                        votesData[i].correo.trim() === ownerData[j].correo.trim()) {
                         // console.log(`Voto ${i}: ${votesData[i].correo}, Data ${j}: ${ownerData[j].correo}`);
                         found = true; // Se encontró una coincidencia
     
@@ -113,16 +118,16 @@ const PollingManage = () => {
             const filteredVotes = votesData.filter(vote => decisionText === vote.proposicion.trim());
     
             const contarVotosApprobal = (votos) => {
-                        return votos.reduce((total, voto) => {
-                            if (parseInt(voto.valor) === 1 && voto.participacion === 0) {
-                                return total + 1;  // Cuenta el voto
-                            } else if (parseInt(voto.valor) === 1 && voto.participacion !== 0) {
-                                return total + (1 * voto.participacion);  // Multiplica por participación
-                            } else {
-                                return total;
-                            }
-                        }, 0);
-                    };
+                return votos.reduce((total, voto) => {
+                    if (parseInt(voto.valor) === 1 && voto.participacion === 0) {
+                        return total + 1;  // Cuenta el voto
+                    } else if (parseInt(voto.valor) === 1 && voto.participacion !== 0) {
+                        return total + (1 * voto.participacion);  // Multiplica por participación
+                    } else {
+                        return total;
+                    }
+                }, 0);
+            };
                     
             const contarVotosReject = (votos) => {
                 return votos.reduce((total, voto) => {

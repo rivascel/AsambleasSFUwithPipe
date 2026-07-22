@@ -99,25 +99,7 @@ export default (httpServer) => {
                 console.log("wordUser:", global.currentAskUsers);
             });
             
-            // ================= ENVIO DEL DECISION A CLIENTES ===================
-            socket.on("send-decision", text => {
-                socket.broadcast.emit("receive-decision", text );
-            });
             
-            // ================= ENVIO DE VOTOS A CLIENTES =================
-            //enviar el mensaje y el usuario
-            socket.on("message", (data) => {
-                // socket.broadcast.emit("message", data);
-
-                console.log("Recibido de:", socket.id);
-
-                socket.broadcast.emit("message", {
-                    ...data,
-                    server: true,
-                    from: socket.id
-                });
-
-            });
 
             // ===================== ACTUALIZAR USE EFFECT SOLICITUDES REALIZADAS =======
             socket.on("request-update", (userId, roomId, status, timeStamp) => {
@@ -169,12 +151,12 @@ export default (httpServer) => {
 
 
             socket.on("sesionStarted", (numberSesion) => {
-                console.log(
-        "RECIBIDO sesionStarted",
-        socket.id,
-        numberSesion,
-        typeof numberSesion
-    );
+                // console.log(
+                //     "RECIBIDO sesionStarted",
+                //     socket.id,
+                //     numberSesion,
+                //     typeof numberSesion
+                // );
 
                 // console.log("📊 Quorum calculado:", quorumPercentage);
                 socket.broadcast.emit("sesionStarted", numberSesion);
@@ -182,6 +164,31 @@ export default (httpServer) => {
 
             socket.on("numberHouses", (numberHouses) => {
                 socket.broadcast.emit("numberHouses", numberHouses);
+            });
+
+
+            // ================= ENVIO DEL DECISION A CLIENTES ===================
+            socket.on("send-decision", text => {
+                socket.broadcast.emit("receive-decision", text );
+            });
+
+            socket.on("inicioVotacion", text => {
+                socket.broadcast.emit("inicioVotacion", text);
+            });
+            
+            // ================= ENVIO DE VOTOS A CLIENTES =================
+            //enviar el mensaje y el usuario
+            socket.on("message", (data) => {
+                // socket.broadcast.emit("message", data);
+
+                // console.log("Recibido de:", socket.id);
+
+                socket.broadcast.emit("message", {
+                    ...data,
+                    server: true,
+                    from: socket.id
+                });
+
             });
         
 
@@ -191,7 +198,6 @@ export default (httpServer) => {
 
                 io.emit('start-cronometer', { 
                     time 
-
                 });
                 console.log("cronometro iniciado", time);
             });
