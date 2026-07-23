@@ -124,7 +124,7 @@ router.post("/fileOwnerByEmail", (req, res)=>{
                 }
             });
 
-            const owner = owners.find(o => o.correo.trim().toLowerCase() === correo.trim().toLowerCase());
+            const owner = owners.find(o => o.correo.trim().toLowerCase() === email.trim().toLowerCase());
 
             if (owner) {
                 const participacion = owner['participacion'];

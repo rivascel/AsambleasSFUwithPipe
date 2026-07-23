@@ -37,8 +37,8 @@ const DashBoardOwner = () => {
   const [error, setError] = useState(null);
   // const [quorum, setQuorum] = useState(null);
   // const [votesData, setVotesData] = useState({}); // lista de todos los propietarios
-  const { email, login, role, setQuorum, setApprovalVotes, setRejectVotes, setBlankVotes } = useContext(UserContext);
-  const ownerData = useRef();
+  const { email, login, role, setQuorum, setApprovalVotes, setRejectVotes, setBlankVotes, ownerData } = useContext(UserContext);
+  const ownerDataRef = useRef(ownerData);
   const sesion = useRef(null);
   const socketRef = useRef(null);
   const [participacion, setParticipacion] = useState(0); // Estado para forzar re-renderizado cuando cambie la participación
@@ -100,7 +100,7 @@ const DashBoardOwner = () => {
       .then((response) => {
 
         // 3. Mapea los nombres del archivo a los que usa tu aplicación
-        ownerData.current = {
+        ownerDataRef.current = {
             correo: response.data.owner.correo,  // "correo" en el archivo -> "email" en tu app
             interior: response.data.owner.interior,
             apartamento: response.data.owner.apto,  // "apto" en el archivo -> "apartamento" en tu app
@@ -108,8 +108,10 @@ const DashBoardOwner = () => {
             alias: response.data.owner.alias
         };
 
+        console.log("ownerData",ownerDataRef);
+
         // 3. Guarda los datos en el contexto
-        login(email, role, ownerData.current); // Pasa los datos al login
+        login(email, role, ownerDataRef.current); // Pasa los datos al login
 
       })
 
@@ -133,7 +135,7 @@ const DashBoardOwner = () => {
     const handleUserConnected = async (connectedEmail) => {
       if (connectedEmail === email) {
         await socketRef.current.emit("requestJoinSesion");
-        await !!ownerData.current
+        await !!ownerDataRef.current
         await ownerRegister(email, sesion.current);
         fetchOwners();
       };
@@ -207,11 +209,11 @@ const DashBoardOwner = () => {
   const ownerRegister = async (email, sesion) => {
 
       const registro = {
-        correo: ownerData.current.correo,
-        interior: ownerData.current.interior,
-        apartamento: ownerData.current.apartamento,
-        participacion: ownerData.current.participacion,
-        alias: ownerData.current.alias,
+        correo: ownerDataRef.current.correo,
+        interior: ownerDataRef.current.interior,
+        apartamento: ownerDataRef.current.apartamento,
+        participacion: ownerDataRef.current.participacion,
+        alias: ownerDataRef.current.alias,
         asistencia: 1, 
         fecha: new Date().toISOString(),
         sesion: sesion
@@ -267,7 +269,7 @@ const DashBoardOwner = () => {
             <Asking_list />
           </Section>
 
-          <Section title="Votación">
+          <Section title="Cronometro Votación">
             <MeetingPollOwner />
           </Section>
 

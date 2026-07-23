@@ -18,6 +18,9 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
 const Graph = () => {
     const { approvalVotes, rejectVotes, blankVotes } = useContext(UserContext);
+    let approve; 
+    let reject;
+    let blank;
     // console.log("approvalVotes, rejectVotes, blankVotes", approvalVotes, rejectVotes, blankVotes);
 
     const data = {
@@ -32,6 +35,19 @@ const Graph = () => {
     };
   // };
 
+  useEffect(()=>{
+    const results = () => {
+
+      approve = approvalVotes/(approvalVotes+rejectVotes+rejectVotes);
+      reject = rejectVotes/(approvalVotes+rejectVotes+rejectVotes);
+      blank = rejectVotes/(approvalVotes+rejectVotes+rejectVotes);
+      console.log("porcentajes",approve,reject,blank)
+
+    }
+    results();
+  },[approvalVotes])
+    
+
   const options = {
     responsive: true,
     plugins: {
@@ -41,10 +57,17 @@ const Graph = () => {
   };
 
   return (
+    <>
     <div className="bg-white p-4 rounded shadow-md">
       <h2 className="text-xl font-semibold mb-4 text-teal-600">Resultados Votación</h2>
       <Bar data={data} options={options} />
     </div>
+    <div className="italic text-blue-600">
+        <text>Aprueban: {approvalVotes} {approve}</text>
+        <text>Rechazan: {rejectVotes} {reject}</text>
+        <text>Blanco: {blankVotes} {blank}</text>
+    </div>
+    </>
   );
 };
 

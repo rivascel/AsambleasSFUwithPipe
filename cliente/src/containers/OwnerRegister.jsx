@@ -114,12 +114,6 @@ const RegisterOwner = ({ onRegister }) => {
         )}
 
         </>
-
-
-
-
-
-
     );
 
 //     return (

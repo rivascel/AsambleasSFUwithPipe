@@ -52,6 +52,7 @@ const PollingManage = () => {
                 alert("El tiempo terminó");
 
                 socketRef.current.emit('end-cronometer');
+                socketRef.current.emit("inicioVotacion", false);
             }
 
             const sAux = second < 10 ? "0" + second : second;

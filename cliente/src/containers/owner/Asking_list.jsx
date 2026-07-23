@@ -48,7 +48,7 @@ const AttendeesList = () => {
           ? pendingRes.map(user => user?.user_id || user?.id).filter(id => id) 
           : [];
 
-        console.log(`📊 Resultado fetchUsers - Pendientes: ${pendingIds.length}`);
+        // console.log(`📊 Resultado fetchUsers - Pendientes: ${pendingIds.length}`);
 
         if (isMounted) {
           setPendingUsersIds(pendingIds);
@@ -107,7 +107,7 @@ useEffect(() => {
       const response = await axios.get(`${apiUrl}/api/emailFile`, {
         withCredentials: true,
       });
-      console.log("Respuesta de /api/emailFile en asking:", response.data);
+      // console.log("Respuesta de /api/emailFile en asking:", response.data);
       if (Array.isArray(response.data)) {
 
         setPendingUsersIds(prevPending => {

@@ -86,6 +86,9 @@ const DashBoardAdmin = () => {
 
         <Section title="Otorgar la Palabra">
           <Approve />
+        </Section>
+
+        <Section title="Cronómetro">
           <MeetingPoll />
         </Section>
 

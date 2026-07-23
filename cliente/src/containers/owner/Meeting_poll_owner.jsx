@@ -64,11 +64,11 @@ const PollManage = () => {
             )} */}
 
           </div>
-          <div className="meeting__poll--summary">
+          {/* <div className="meeting__poll--summary">
             <h2 className="text-red-600 mb-2">Resultados Votación</h2>
                 <canvas id="results" width="300" height="200"></canvas>
                 <div id="statical" hidden></div>
-          </div>
+          </div> */}
     </div>
   );
 };
