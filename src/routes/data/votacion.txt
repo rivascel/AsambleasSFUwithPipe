@@ -45,3 +45,17 @@
 {"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"Propuesta de ejemplo para ser votada.1","valor":1}
 {"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"Propuesta de ejemplo para ser votada.","valor":1}
 {"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"Propuesta de ejemplo para ser votada.2","valor":1}
+{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"Propuesta de ejemplo para ser votada.","valor":1}
+{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"Propuesta de ejemplo para ser votada.","valor":1}
+{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"Propuesta de ejemplo para ser votada.","valor":1}
+{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"Propuesta de ejemplo para ser votada.","valor":1}
+{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"Propuesta de ejemplo para ser votada.","valor":2}
+{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"Propuesta de ejemplo para ser votada3","valor":2}
+{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"Propuesta de ejemplo para ser votada3","valor":2}
+{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"Propuesta de ejemplo para ser votada3","valor":1}
+{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"Propuesta de ejemplo para ser votada.4","valor":1}
+{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"Propuesta de ejemplo para ser votada.4","valor":2}
+{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"Propuesta de ejemplo para ser votada.4","valor":0}
+{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"Propuesta de ejemplo para ser votada.6","valor":2}
+{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"Propuesta de ejemplo para ser votada.7","valor":0}
+{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"Propuesta de ejemplo para ser votada.2","valor":2}

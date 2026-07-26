@@ -10,6 +10,8 @@ import { listenToRequests } from "../../../src/supabase-client";
 // import sinSenalImage from '..../assets/img/sin_senal.png'; 
 // import sin from '../../assets'
 
+// import { consumersRef, remoteProducerRef, consume, showVideo } from "../../hooks/consume";
+
 const VideoGeneral = () => {
   const { apiUrl } = useContext(AppContext);
   const [isBroadcasting, setIsBroadcasting] = useState(false);
@@ -33,7 +35,9 @@ const VideoGeneral = () => {
 
   const producersRef = useRef(new Map());
   const remoteProducerRef = useRef(new Map()); // Para almacenar el producerId del admin
-  // const consumingRef = useRef(new Set());
+
+  const consumingRef = useRef(null); 
+
   const consumersRef = useRef([]);
   const roleRef = useRef("admin");
   // const pendingProducersRef=useRef(new Map()); // producerId -> { socketId, kind, role }
@@ -79,10 +83,6 @@ const VideoGeneral = () => {
         return () => {
           subscription.removeChannel();
         };
-
-
-        
-
     },[roomId]);
 
   // 1. Estado central (useRef + estado lógico)
@@ -109,7 +109,7 @@ const VideoGeneral = () => {
     setIsLive(true);
   }
 
-    useEffect(() => {
+  useEffect(() => {
       const handler = ( producerId ) => {
   
         console.log("remoteProducerRef en useEffect", remoteProducerRef);
@@ -484,8 +484,10 @@ const VideoGeneral = () => {
         listenForNewProducers();
     await createRecvTransport();
 
-    await consumeExisting();
-    
+     await consumeExisting();
+
+    // consumingRef = await consume(socketRef, createRecvTransport, remoteRef) // funcion para activar proceso de consumo
+    showVideo(consumingRef);
   };
 
   // createRecvTransport
@@ -698,6 +700,44 @@ const VideoGeneral = () => {
       return consumer;
   };
 
+
+  // recibe el consumer para mostrar en video
+//   function showVideo (targetVideo) {
+
+//       if (!targetVideo.srcObject) {
+//       setIsLiveOwner(true);
+//       console.log("4. creando MediaStream");
+//       targetVideo.srcObject = new MediaStream();
+//     }
+
+//     const stream = targetVideo.srcObject;
+
+//     // Eliminar tracks antiguos del mismo tipo
+//     stream.getTracks().filter(t => t.kind === consumerData.kind)
+//                 .forEach(t => stream.removeTrack(t));
+    
+
+//     // Agregar el nuevo track
+//     stream.addTrack(consumer.track);
+
+//     // Configurar y reproducir el remote cuando recibe del producto admin
+//     // 9. Reproducir
+//     try {
+//       targetVideo.muted = true;
+//       targetVideo.playsInline = true;
+//       await targetVideo.play();
+//       console.log(`▶️ Reproducción iniciada: ${consumerData.kind} [${consumerData.role}]`);
+//     } catch (err) {
+//       if (err.name !== "AbortError") {
+//         console.error("Error de reproducción:", err);
+//       }
+//     }
+      
+//     console.log(`✅ Track ${consumerData.kind} listo. Total tracks:`, stream.getTracks().length);
+
+// }
+
+
   const listenForNewProducers = () => {
       
       socketRef.current.on("new-producer", async (data) => {
@@ -732,9 +772,7 @@ const VideoGeneral = () => {
         } catch (err) {
           console.error("Error consumiendo producer", err);
         } 
-        // finally {
-        //   // consumingRef.current.delete(data.producerId);
-        // }
+
       });
   };
 
@@ -786,7 +824,7 @@ const VideoGeneral = () => {
     if (initializedRef.current) return;
     initializedRef.current = true;
 
-    const socket = getSocket(apiUrl);
+    export const socket = getSocket(apiUrl);
     socketRef.current = socket;
 
     socketRef.current.on("connect", async () => {

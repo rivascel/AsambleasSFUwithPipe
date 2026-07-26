@@ -41,7 +41,7 @@ const PollManage = () => {
     socketRef.current.on('end-cronometer', () => {
       alert("Tiempo terminado");
       flag=false;
-      setVotingEnabled(false);
+      // setVotingEnabled(false);
   });  
   
 

@@ -46,7 +46,7 @@ const Questions = () => {
   const handleVoteChange = async (e, decision) => {
     // if (!votingEnabled) return;
     const value = e.target.value;
-    // setVoting(false); //deshabilita la votacion
+    setVoting(false); //deshabilita la votacion
     
     //solo pueden votar los que tienen participacion, es decir, son propietarios
     // if (ownerData.participacion !== 0) {

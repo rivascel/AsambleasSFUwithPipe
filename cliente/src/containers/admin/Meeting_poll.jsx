@@ -31,7 +31,7 @@ const PollingManage = () => {
         let minute = 0;
         let second = 0;
         setDisplayTime("00:00");
-        setVotingEnabled(true);
+        // setVotingEnabled(true);
 
         socketRef.current.emit('start-cronometer', { 
             time: `${minute}:00` 

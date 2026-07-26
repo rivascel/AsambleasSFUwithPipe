@@ -182,14 +182,14 @@ const VideoGeneral = () => {
       socketRef.current.on("producerClosed", handler );
     } else {
     console.log("❌ socketRef.current es null");
-  }
+    }
 
     return () => {
       socketRef.current.off("producerClosed", handler);
     };
-}, []);
+  }, []);
 
-const stopProducing =  () => {
+  const stopProducing =  () => {
     // cerrar producers
     console.log("PRODUCERS REF:", producersRef);
     producersRef.current.forEach((producerInfo, producerId) => {
@@ -210,8 +210,6 @@ const stopProducing =  () => {
       localRef.current.srcObject = null;
     }
     console.log("🛑 Producción detenida");
-
-
   };
 
   // 4. joinRoom
@@ -383,6 +381,9 @@ const stopProducing =  () => {
     await createRecvTransport();
     
     await consumeExisting();
+
+    //await consume(socketRef, createRecvTransport, remoteRef) // funcion para activar proceso de consumo
+    
   };
 
   const createRecvTransport = () => {
