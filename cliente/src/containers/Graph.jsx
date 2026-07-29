@@ -63,9 +63,9 @@ const Graph = () => {
       <Bar data={data} options={options} />
     </div>
     <div className="italic text-blue-600">
-        <text>Aprueban: {approvalVotes} {approve}</text>
+        {/* <text>Aprueban: {approvalVotes} {approve}</text>
         <text>Rechazan: {rejectVotes} {reject}</text>
-        <text>Blanco: {blankVotes} {blank}</text>
+        <text>Blanco: {blankVotes} {blank}</text> */}
     </div>
     </>
   );

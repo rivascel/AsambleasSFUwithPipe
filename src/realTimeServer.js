@@ -428,13 +428,13 @@ export default (httpServer) => {
             try {
                 const producer = await transport.produce({ kind, rtpParameters, appData: { peerId: socket.id, } });
 
-                console.log("ANTES push:",peer.producers.length);
+                // console.log("ANTES push:",peer.producers.length);
 
                 peer.producers.push(producer);
                 peer.role = role; // Guardar el rol del peer
                 // room.activeProducerId = socket.id;
 
-                console.log("DESPUES push:",peer.producers.length);
+                // console.log("DESPUES push:",peer.producers.length);
 
                 
                 // REGISTRO GLOBAL
@@ -461,7 +461,7 @@ export default (httpServer) => {
                     peer.producers = peer.producers.filter(p => p.id !== producer.id);
 
                     socket.to(roomId).emit("producer-closed", { producerId: producer.id });
-                console.log("DESPUES DE CERRAR push:",peer.producers.length);
+                // console.log("DESPUES DE CERRAR push:",peer.producers.length);
                 }
                 
                 );

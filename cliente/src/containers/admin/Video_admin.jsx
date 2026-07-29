@@ -486,8 +486,7 @@ const VideoGeneral = () => {
 
      await consumeExisting();
 
-    // consumingRef = await consume(socketRef, createRecvTransport, remoteRef) // funcion para activar proceso de consumo
-    showVideo(consumingRef);
+
   };
 
   // createRecvTransport
@@ -725,7 +724,7 @@ const VideoGeneral = () => {
 //     try {
 //       targetVideo.muted = true;
 //       targetVideo.playsInline = true;
-//       await targetVideo.play();
+//       targetVideo.play();
 //       console.log(`▶️ Reproducción iniciada: ${consumerData.kind} [${consumerData.role}]`);
 //     } catch (err) {
 //       if (err.name !== "AbortError") {
@@ -824,7 +823,7 @@ const VideoGeneral = () => {
     if (initializedRef.current) return;
     initializedRef.current = true;
 
-    export const socket = getSocket(apiUrl);
+    const socket = getSocket(apiUrl);
     socketRef.current = socket;
 
     socketRef.current.on("connect", async () => {
