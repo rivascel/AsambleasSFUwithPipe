@@ -59,3 +59,9 @@
 {"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"Propuesta de ejemplo para ser votada.6","valor":2}
 {"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"Propuesta de ejemplo para ser votada.7","valor":0}
 {"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"Propuesta de ejemplo para ser votada.2","valor":2}
+{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"Propuesta de ejemplo para ser votada2222","valor":2}
+{"interior":"50","apartamento":"102","correo":"techprocess.sas@gmail.com","proposicion":"Propuesta de ejemplo para ser votada2222","valor":0}
+{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"Propuesta ","valor":2}
+{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"proposicion","valor":1}
+{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"Propuesta de ejemplo para ser votada.","valor":1}
+{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"2026","valor":1}

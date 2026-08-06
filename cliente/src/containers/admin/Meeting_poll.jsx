@@ -4,6 +4,9 @@ import { UserContext } from "../../components/UserContext";
 import axios from 'axios';
 import AppContext from '../../context/AppContext';
 import { getSocket  } from "../../hooks/socket";
+// import { Button } from "../../components/components/Button";
+import  Button  from "../../components/components/Button";
+
 
 
 const PollingManage = () => {
@@ -190,10 +193,9 @@ const PollingManage = () => {
                 </button>
             </div>
             <div className="meeting__polling--summary">
-                <button type="button" 
-                id="calculo"
-                onClick={countVotes}
-                >Conteo</button>
+                <Button type="Button" id="calculo" onClick={countVotes}>
+                Conteo
+                </Button>
 
             </div>
         </div>

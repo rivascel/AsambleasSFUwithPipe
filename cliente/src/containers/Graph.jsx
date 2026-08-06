@@ -21,7 +21,7 @@ const Graph = () => {
     let approve; 
     let reject;
     let blank;
-    // console.log("approvalVotes, rejectVotes, blankVotes", approvalVotes, rejectVotes, blankVotes);
+    let approvePorc,rejectPorc,blankPorc
 
     const data = {
       labels: ["Aprueba", "Rechaza", "Blanco"],
@@ -38,10 +38,17 @@ const Graph = () => {
   useEffect(()=>{
     const results = () => {
 
-      approve = approvalVotes/(approvalVotes+rejectVotes+rejectVotes);
-      reject = rejectVotes/(approvalVotes+rejectVotes+rejectVotes);
-      blank = rejectVotes/(approvalVotes+rejectVotes+rejectVotes);
-      console.log("porcentajes",approve,reject,blank)
+      approve = approvalVotes;
+      reject = rejectVotes;
+      blank = blankVotes;
+
+
+      approvePorc = approvalVotes/(approvalVotes+rejectVotes+rejectVotes);
+      rejectPorc = rejectVotes/(approvalVotes+rejectVotes+rejectVotes);
+      blankPorc = blankVotes/(approvalVotes+rejectVotes+rejectVotes);
+      console.log("votos abcolutos",approve,reject,blank);
+
+      console.log("porcentajes",approvePorc,rejectPorc,blankPorc);
 
     }
     results();
@@ -63,9 +70,14 @@ const Graph = () => {
       <Bar data={data} options={options} />
     </div>
     <div className="italic text-blue-600">
-        {/* <text>Aprueban: {approvalVotes} {approve}</text>
-        <text>Rechazan: {rejectVotes} {reject}</text>
-        <text>Blanco: {blankVotes} {blank}</text> */}
+        Aprueban: {approvalVotes} 
+        Rechazan: {rejectVotes} 
+        Blanco: {blankVotes} 
+    </div>
+    <div className="italic text-blue-600">
+        Porc. Aprueban: {approvalVotes/(approvalVotes+rejectVotes+rejectVotes)*100}%
+        PorRechazan: {rejectVotes/(approvalVotes+rejectVotes+rejectVotes)*100}%
+        Blanco:  {blankVotes/(approvalVotes+rejectVotes+rejectVotes)*100}%
     </div>
     </>
   );
