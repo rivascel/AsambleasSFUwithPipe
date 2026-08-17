@@ -24,9 +24,11 @@ const UserProvider = ({ children }) => {
   const [quorum, setQuorum] = useState(null);
   const [votingEnabled, setVotingEnabled] = useState(false); 
   const [decisionText, setDecisionText] = useState("Propuesta de ejemplo para ser votada.");
+
   const [approvalVotes, setApprovalVotes] = useState(0);
   const [rejectVotes, setRejectVotes] = useState(0);
   const [blankVotes, setBlankVotes] = useState(0);    
+  
   const [checkApprove, setCheckApprove] = useState(null);
   const [isAuthenticatedAdmin, setIsAuthenticatedAdmin] = useState(false);
   const [isAuthenticatedOwner, setIsAuthenticatedOwner] = useState(false);

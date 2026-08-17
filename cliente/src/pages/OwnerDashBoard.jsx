@@ -159,7 +159,7 @@ const DashBoardOwner = () => {
     return () => {
         socketRef.current.off('send-votes', handleUpdateVotes);
     };
-}, [setApprovalVotes, setRejectVotes, setBlankVotes]);
+}, []);
 
    
   const fetchOwners = async () => {

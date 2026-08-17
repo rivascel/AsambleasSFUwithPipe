@@ -95,8 +95,9 @@ const Questions = () => {
               name="myRadio"
               value="1"
               disabled={!voting}
-              checked={selected === "1"}
+              // checked={selected === "1"}
               onChange={ (e) => handleVoteChange(e, decisionText)}
+              className="mr-2"
             />{" "}
             Aprueba
           </label>
@@ -106,8 +107,9 @@ const Questions = () => {
               name="myRadio"
               value="2"
               disabled={!voting}
-              checked={selected === "2"}
+              // checked={selected === "2"}
               onChange={ (e) => handleVoteChange(e, decisionText) } 
+              className="mr-2"
             />{" "}
             Rechaza
           </label>
@@ -117,7 +119,7 @@ const Questions = () => {
               name="myRadio"
               value="0"
               disabled={!voting}
-              checked={selected === "0"}
+              // checked={selected === "0"}
               onChange={ (e) => handleVoteChange(e, decisionText) }
             />{" "}
             Blanco

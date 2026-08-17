@@ -42,17 +42,27 @@ const Graph = () => {
       reject = rejectVotes;
       blank = blankVotes;
 
+      const totalVotes = approvalVotes + rejectVotes + blankVotes;
 
-      approvePorc = approvalVotes/(approvalVotes+rejectVotes+rejectVotes);
-      rejectPorc = rejectVotes/(approvalVotes+rejectVotes+rejectVotes);
-      blankPorc = blankVotes/(approvalVotes+rejectVotes+rejectVotes);
-      console.log("votos abcolutos",approve,reject,blank);
+      if (totalVotes === 0) {
+        approvePorc = 0;
+        rejectPorc = 0;
+        blankPorc = 0;
+      } else {
+        approvePorc = (approvalVotes / totalVotes) * 100;
+        rejectPorc = (rejectVotes / totalVotes) * 100;
+        blankPorc = (blankVotes / totalVotes) * 100;
+      }
+
+      console.log("approvalVotes + rejectVotes + blankVotes",approvalVotes, rejectVotes, blankVotes);
+
+      console.log("votos absolutos",approve,reject,blank);
 
       console.log("porcentajes",approvePorc,rejectPorc,blankPorc);
 
     }
     results();
-  },[approvalVotes])
+  },[approvalVotes,rejectVotes,blankVotes])
     
 
   const options = {

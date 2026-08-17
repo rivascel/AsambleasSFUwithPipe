@@ -12,8 +12,6 @@ import  Button  from "../../components/components/Button";
 const PollingManage = () => {
     const { apiUrl } = useContext(AppContext);
     const socketRef = useRef(null);
-
-    
     const intervalo = useRef(null);
 
     const [finalMinute, setFinalMinute] = useState(0);
@@ -80,98 +78,104 @@ const PollingManage = () => {
 
     async function countVotes() {
             try { 
-            //trae las votaciones
-            const response = await axios.get(`${apiUrl}/api/file`)
-            //trae los propietarios y su participacion
-            const res = await axios.get(`${apiUrl}/api/emailFile`)
+                    //trae las votaciones
+                    const response = await axios.get(`${apiUrl}/api/file`)
+                    //trae los propietarios y su participacion
+                    const res = await axios.get(`${apiUrl}/api/emailFile`)
 
-            const votesData = response.data;
-            const ownerData = res.data;
-    
-            if (!Array.isArray(votesData) && !Array.isArray(ownerData)) {
-                throw new Error("La respuesta del servidor no es un arreglo.");
-            }
-    
-            for (let i = 0; i < votesData.length; i++) {
-                let vote = votesData[i];
-                if (typeof vote.correo !== 'string') {
-                    console.warn(`Correo inválido en votesData[${i}]:`, vote);
-                    continue;
-                }
-                let found = false; // Bandera para verificar si encontramos el correo en ownerData
-                
-                for (let j = 0; j < ownerData.length; j++) { 
-                    if ( typeof votesData[i].correo === 'string' &&
-                        typeof ownerData[j].correo === 'string' &&
-                        votesData[i].correo.trim() === ownerData[j].correo.trim()) {
-                        // console.log(`Voto ${i}: ${votesData[i].correo}, Data ${j}: ${ownerData[j].correo}`);
-                        found = true; // Se encontró una coincidencia
-    
-                        votesData[i].participacion = ownerData[j].participacion;
-                        
-                        // console.log("Consolidado Votacion",votesData);
-                        break; // Salir del bucle interno si ya encontramos el correo
-                    }
-                }
+                    const votesData = response.data;
+                    const ownerData = res.data;
             
-                if (!found) {
-                    console.log(`No se encontró el correo: ${votesData[i].correo}`);
-                }
-            }
-    
-            const filteredVotes = votesData.filter(vote => decisionText === vote.proposicion.trim());
-    
-            const contarVotosApprobal = (votos) => {
-                return votos.reduce((total, voto) => {
-                    if (parseInt(voto.valor) === 1 && voto.participacion === 0) {
-                        return total + 1;  // Cuenta el voto
-                    } else if (parseInt(voto.valor) === 1 && voto.participacion !== 0) {
-                        return total + (1 * voto.participacion);  // Multiplica por participación
-                    } else {
-                        return total;
+                    if (!Array.isArray(votesData) || !Array.isArray(ownerData)) {
+                        throw new Error("La respuesta del servidor no es un arreglo.");
                     }
-                }, 0);
-            };
-                    
-            const contarVotosReject = (votos) => {
-                return votos.reduce((total, voto) => {
-                    if (voto.valor === 2 && voto.participacion === 0) {
-                        return total + 1;
-                    } else if (voto.valor === 2 && voto.participacion !== 0) {
-                        return total + (1 * voto.participacion);
-                    } else {
-                        return total;
-                    }
-                }, 0);
-            };
-                    
-            const contarVotosBlank = (votos) => {
-                return votos.reduce((total, voto) => {
-                    if (voto.valor === 0 && voto.participacion === 0) {
-                        return total + 1;
-                    } else if (voto.valor === 0 && voto.participacion !== 0) {
-                        return total + (1 * voto.participacion);
-                    } else {
-                        return total;
-                    }
-                }, 0);
-            };
-    
-            setApprovalVotes(contarVotosApprobal(filteredVotes));
-            setRejectVotes(contarVotosReject(filteredVotes));
-            setBlankVotes(contarVotosBlank(filteredVotes));
-    
-          socketRef.current.emit('send-votes',{
-            approval: contarVotosApprobal(filteredVotes),
-            reject: contarVotosReject(filteredVotes),
-            blank: contarVotosBlank(filteredVotes),
+            
+                    for (let i = 0; i < votesData.length; i++) {
+                        let vote = votesData[i];
+                        if (typeof vote.correo !== 'string') {
+                            console.warn(`Correo inválido en votesData[${i}]:`, vote);
+                            continue;
+                        }
+                        let found = false; // Bandera para verificar si encontramos el correo en ownerData
 
-          });
-    
-            } catch (error) {
-            console.error("Error al contar los votos:", error);
-            return null;
-            };
+                        
+                        for (let j = 0; j < ownerData.length; j++) { 
+                            if ( typeof votesData[i].correo === 'string' &&
+                                typeof ownerData[j].correo === 'string' &&
+                                votesData[i].correo.trim() === ownerData[j].correo.trim()) {
+                                // console.log(`Voto ${i}: ${votesData[i].correo}, Data ${j}: ${ownerData[j].correo}`);
+                                found = true; // Se encontró una coincidencia
+            
+                                votesData[i].participacion = ownerData[j].participacion;
+                                
+                                // console.log("Consolidado Votacion",votesData);
+                                break; // Salir del bucle interno si ya encontramos el correo
+                            }
+                        }
+                    
+                        if (!found) {
+                            console.log(`No se encontró el correo: ${votesData[i].correo}`);
+                        }
+                    }
+            
+                    const filteredVotes = votesData.filter(vote => decisionText === vote.proposicion.trim());
+                    console.log("filteredVotes:", filteredVotes);
+            
+                    const contarVotosApprobal = (votos) => {
+
+                        return votos.reduce((total, voto) => {
+                            const valor = parseInt(voto.valor);
+                            if (valor === 1 && voto.participacion === 0) {
+                                return total + 1;  // Cuenta el voto
+                            } else if (valor === 1 && voto.participacion !== 0) {
+                                return total + (1 * voto.participacion);  // Multiplica por participación
+                            } else {
+                                return total;
+                            }
+                        }, 0);
+                    };
+                            
+                    const contarVotosReject = (votos) => {
+                        return votos.reduce((total, voto) => {
+                            const valor = parseInt(voto.valor);
+                            if (valor === 2 && voto.participacion === 0) {
+                                return total + 1;
+                            } else if (valor === 2 && voto.participacion !== 0) {
+                                return total + (1 * voto.participacion);
+                            } else {
+                                return total;
+                            }
+                        }, 0);
+                    };
+                            
+                    const contarVotosBlank = (votos) => {
+                        return votos.reduce((total, voto) => {
+                            const valor = parseInt(voto.valor);
+                            if (valor === 0 && voto.participacion === 0) {
+                                return total + 1;
+                            } else if (valor === 0 && voto.participacion !== 0) {
+                                console.log("valor de conteo",total + (1 * voto.participacion));
+                                return total + (1 * voto.participacion);
+                            } else {
+                                return total;
+                            }
+                        }, 0);
+                    };
+            
+                    setApprovalVotes(contarVotosApprobal(filteredVotes));
+                    setRejectVotes(contarVotosReject(filteredVotes));
+                    setBlankVotes(contarVotosBlank(filteredVotes));
+            
+                    socketRef.current.emit('send-votes',{
+                        approval: contarVotosApprobal(filteredVotes),
+                        reject: contarVotosReject(filteredVotes),
+                        blank: contarVotosBlank(filteredVotes),
+                    });
+            
+                } catch (error) {
+                console.error("Error al contar los votos:", error);
+                return null;
+                };
         };
 
     return (

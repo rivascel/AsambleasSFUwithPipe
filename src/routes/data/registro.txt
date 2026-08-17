@@ -1,2 +1,3 @@
-{"correo":"rivascel@gmail.com","interior":"14","apartamento":"101","participacion":3,"alias":"Int 14 apto 101","asistencia":1,"fecha":"2026-07-11T19:29:58.646Z","sesion":1}
-{"correo":"revisor@gmail.com","interior":"14","apartamento":"101","participacion":0,"alias":"Int 14 apto 101","asistencia":1,"fecha":"2026-07-11T19:29:58.646Z","sesion":1}
+{"correo":"rivascel@gmail.com","interior":"14","apartamento":"101","participacion":2,"alias":"Int 14 apto 101","asistencia":1,"fecha":"2026-08-17T00:12:52.386Z","sesion":null}
+{"correo":"techprocess.sas@gmail.com","interior":"50","apartamento":"102","participacion":1,"alias":"Int 50 apto 102","asistencia":1,"fecha":"2026-08-17T00:13:13.035Z","sesion":null}
+{"correo":"rivascel@hotmail.com","interior":"65","apartamento":"502","participacion":1,"alias":"Int 65 apto 502","asistencia":1,"fecha":"2026-08-17T00:13:48.269Z","sesion":null}
