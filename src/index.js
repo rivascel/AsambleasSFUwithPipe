@@ -12,6 +12,8 @@ import express from "express";
 import realTimeServer from "./realTimeServer.js";
 import cookieParser from "cookie-parser";
 import http from "http";
+import https from "https";
+import fs from "fs";
 const app = express();
 import cors from "cors";
 import path from "path";
@@ -40,7 +42,9 @@ const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:5174',
   'http://localhost:3000',
-  'https://asambleasgeneral.onrender.com'
+  'https://asambleasgeneral.onrender.com',
+  'https://192.168.1.3:5173',
+  'https://192.168.1.3:3000',
 ];
 
 const originConfig = process.env.NODE_ENV === 'development' 
@@ -98,18 +102,37 @@ if (process.env.NODE_ENV === 'production') {
 
 };
 
+let server;
+if (process.env.NODE_ENV === 'development') {
+  // Único caso donde Node mismo necesita hablar HTTPS directamente,
+  // porque no hay Nginx/Caddy/Render delante hacienda de proxy TLS
+  const options = {
+    key: fs.readFileSync(path.resolve(__dirname, 'ssl/192.168.1.3+2-key.pem')),
+    cert: fs.readFileSync(path.resolve(__dirname, 'ssl/192.168.1.3+2.pem')),
+  };
+  server = https.createServer(options, app);
+} else {
+  // Producción (VPS con Nginx/Caddy delante) → HTTP puro, como ya tenías
+  server = http.createServer(app);
+}
+
 
 //settings
-app.set("port", process.env.PORT || 10000);
+app.set("port", process.env.PORT || 3000);
 app.set("host", "0.0.0.0");
 
 // Obtén los valores
 const PORT = app.get("port");
 const HOST = "0.0.0.0";
 
+// console.log("NODE_ENV:", process.env.NODE_ENV);
+// console.log("PORT:", process.env.PORT);
+// console.log("HOST:", HOST);
+// console.log("HTTPS:", process.env.NODE_ENV === 'development');
 
-let server;
-server = http.createServer(app);
+
+
+// server = http.createServer(app);
 realTimeServer(server);
 
 

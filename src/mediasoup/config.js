@@ -20,7 +20,7 @@ export const configuration = {
         },
         {
           kind: "video",
-          mimeType: "video/VP8",
+          mimeType: "video/H264",
           clockRate: 90000,
           parameters: {
             "packetization-mode": 1,
@@ -51,7 +51,7 @@ export const configuration = {
 
       enableTcp: true,
       enableUdp: true, // Deshabilitar UDP
-      preferUdp: false, // Priorizar TCP
+      preferUdp: true, // Priorizar TCP
       iceTransportPolicy: 'all', // O 'relay' si quieres forzar TURN
       
       initialAvailableOutgoingBitrate: 1000000,

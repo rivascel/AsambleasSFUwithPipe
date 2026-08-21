@@ -48,8 +48,7 @@ const DashBoardAdmin = () => {
 
   useEffect(() => {
     axios.get(`${apiUrl}/api/admin-data`, {
-        withCredentials: true,
-        })
+        withCredentials: true,})
         .then((res) => {
               // email;
               login(res.data.email); // ✅ Actualiza el contexto global

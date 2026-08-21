@@ -60,7 +60,7 @@ const Questions = () => {
     // }
     setSelected(null); //despues de registrar el voto, select pasa a null
 
-    await axios.post(`${apiUrl}/api/votacion`, nuevoVoto)
+    await axios.post(`${apiUrl}/api/votacion`, nuevoVoto, { withCredentials: true })
       .then(response => {
       })
     .catch(error => {

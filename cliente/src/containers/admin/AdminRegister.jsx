@@ -1,5 +1,4 @@
 import React, { useState, useContext, useEffect } from "react";
-import axios from "axios";
 import { UserContext } from "../../components/UserContext";
 import { useNavigate } from 'react-router-dom';
 import Card from '../../components/components/Card';

@@ -27,8 +27,7 @@ const RegisterOwner = ({ onRegister }) => {
             {   email,
                 role: "owner"
             },
-            { withCredentials: true }
-        );
+            { withCredentials: true });
         console.log("Enlace mágico solicitado para:", email, role);
 
         setIsSuccess(true);

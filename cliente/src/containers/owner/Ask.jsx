@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useContext, useRef } from "react";
-import axios from "axios";
 import { UserContext } from "../../components/UserContext";
 import { io } from "socket.io-client";
 import { listenToUserRequests, requestToJoinRoom, getPendingRequest, getPendingRequestById, 

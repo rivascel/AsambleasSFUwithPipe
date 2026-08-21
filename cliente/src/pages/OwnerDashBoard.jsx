@@ -220,7 +220,7 @@ const DashBoardOwner = () => {
       };
 
       try {
-        const response = await axios.post(`${apiUrl}/api/registro`, registro);
+        const response = await axios.post(`${apiUrl}/api/registro`, registro, { withCredentials: true});
         console.log("4. Respuesta:", response.data.message);
         if (response.data.registered) {
             console.log("El correo ya estaba registrado, no se registrará de nuevo.");

@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useContext, useRef } from 'react';
-import axios from 'axios';
 import '../styles/Header.css';
 
 import { UserContext } from "../components/UserContext";
