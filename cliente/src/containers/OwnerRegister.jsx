@@ -6,13 +6,18 @@ import AppContext from '../context/AppContext';
 import Card from '../components/components/Card';
 import Button from '../components/components/Button';
 
-const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_URL_LOCAL; 
+
+import API_URL from '../config/api';
+
+// const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_URL_LOCAL; 
+
 
 const RegisterOwner = ({ onRegister }) => {
     // const { API_URL } = useContext(AppContext);
     const [email, setEmail] = useState("");
+    const role = "owner"; 
     const [message, setMessage] = useState("");
-    const { login, role } = useContext(UserContext);
+    const { login } = useContext(UserContext);
     // const [warm, setWarm] = useState(false);
     const [showModal, setShowModal] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
@@ -25,7 +30,7 @@ const RegisterOwner = ({ onRegister }) => {
       try {
         const response = await axios.post(`${API_URL}/api/request-magic-link`, 
             {   email,
-                role: "owner"
+                role: role
             },
             { withCredentials: true });
         console.log("Enlace mágico solicitado para:", email, role);
@@ -35,7 +40,7 @@ const RegisterOwner = ({ onRegister }) => {
 
         setMessage("Enlace enviado. Revisa tu correo.");
         onRegister?.(email); // si quieres avanzar al siguiente paso visual
-        login(email, "owner"); // Pasar el rol y datos adicionales
+        login(email, role); // Pasar el rol y datos adicionales
         // localStorage.setItem("userEmail", email); // Guardar el email en localStorage
         // login(email);
 

@@ -6,7 +6,9 @@ export const UserContext = createContext(null);
 
 // import { API_URL } from '../config/api'; // Impórtalo directamente
 
-const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_URL_LOCAL; 
+// const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_URL_LOCAL; 
+
+import API_URL from '../config/api';
 
 
 const UserProvider = ({ children }) => {
@@ -94,7 +96,7 @@ const UserProvider = ({ children }) => {
   //   setNumberHouses
   // }
 
-  const login = (email, role, data) => {
+  const login = (email, setIsAuthenticatedOwner, data) => {
     setEmail(email);
     setRole(role);
     setIsAuthenticated(true);

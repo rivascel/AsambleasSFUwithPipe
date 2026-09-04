@@ -10,15 +10,17 @@ import useVideoQuality from "../../hooks/useVideoQuality";
 import useVisibility from "../../hooks/useVisibility";
 import { useRoomState } from "../../hooks/useRoomState";
 import Title from "../../components/components/Title";
+import API_URL from '../../config/api';
 
 // import {image} from "../../assets/img/sin_senal";
 
+const apiUrl = API_URL;
 
 const VideoGeneral = () => {
   const userRoutersMap = useRef(new Map()); // userId -> routerId
   const [isAllowed, setIsAllowed] = useState(false);
   const [viewerReady, setViewerReady] = useState(false);
-  const { apiUrl } = useContext(AppContext);
+  // const { apiUrl } = useContext(AppContext);
   const [isBroadcasting, setIsBroadcasting] = useState(false);
   const localRef = useRef();
   const remoteRef = useRef();
@@ -86,7 +88,7 @@ const VideoGeneral = () => {
         const approvedUsersById = await getApprovedUserById(roomId, email);
 
         // const userData = await response.json();
-        const userById = await approvedUsersById || [];
+        const userById = approvedUsersById || [];
 
         unsuscribeChannel  = listenToRequests(roomId, {componentId: 'VideoOwner'}, (approver) => {
           
@@ -132,11 +134,8 @@ const VideoGeneral = () => {
 
   // 3. INIT FLOW (el corazón)
   const initFlow = async () => {
-
     await joinRoom();
-    
     await loadDevice();
-    
     await setupConsumerFlow();
 
   };
@@ -157,9 +156,9 @@ const VideoGeneral = () => {
       console.log("remoteProducerRef en useEffect", remoteProducerRef);
 
       const producerData = remoteProducerRef.current.get(producerId);
-      if (producerData) {
-        const { kind, role } = producerData;
-      }
+      // if (producerData) {
+      //   const { kind, role } = producerData;
+      // }
 
       if (!producerData) return;
 
@@ -173,9 +172,13 @@ const VideoGeneral = () => {
         console.log("is true admin", isAdmin);
         setIsLive(false);
       } else {
-        
-        setIsLiveAttended(false) || setIsLiveOwner(false);
+
+        setIsLiveAttended(true) ?  setIsLiveAttended(false) : setIsLiveAttended(false);
+        setIsLiveOwner(true) ? setIsLiveOwner(false) : setIsLiveOwner(false);
       }
+
+        // setIsLiveAttended(false) || setIsLiveOwner(false);
+      // }
     };
 
     if (socketRef.current) {
@@ -222,21 +225,17 @@ const VideoGeneral = () => {
         }
 
         rtpCapabilitiesRef.current = data.rtpCapabilities;
-
         myRouterIdRef.current = data.routerId; // Guardar mi router asignado
-
         console.log("✅ Unido a la sala", roomId, "Router asignado:", data.routerId);
         setState("JOINED");
         resolve();
       });
     });
-    
   };
 
   // 5. loadDevice
   const loadDevice = async () => {
     const device = new mediasoupClient.Device();
-    // iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
 
     await device.load({ routerRtpCapabilities: rtpCapabilitiesRef.current  });
 
@@ -344,6 +343,11 @@ const VideoGeneral = () => {
 
   // produce (clave)
   const produce = async () => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      console.error('getUserMedia no está soportado en este navegador/contexto');
+      // Mostrar mensaje al usuario explicando que necesita HTTPS o cambiar de navegador
+      return;
+    }
     const stream = await navigator.mediaDevices.getUserMedia({
       video: true,
       audio: true,
@@ -381,9 +385,6 @@ const VideoGeneral = () => {
     await createRecvTransport();
     
     await consumeExisting();
-
-    //await consume(socketRef, createRecvTransport, remoteRef) // funcion para activar proceso de consumo
-    
   };
 
   const createRecvTransport = () => {
@@ -391,20 +392,18 @@ const VideoGeneral = () => {
     return new Promise((resolve, reject) => {
       socketRef.current.emit(
         "createTransport",
-        { consumer: true, roomId, email }, (params) => 
-          {
+        { consumer: true, roomId, email }, (params) => {
 
             const transport =  deviceRef.current.createRecvTransport(params);
             recvTransportRef.current = transport;
 
-            // resolve(transport);
-
-            // Variable fuera de la función o en un Ref para controlar el estado
+            console.log("✅ recvTransport creado", transport.id);
 
             transport.on("connect", ({ dtlsParameters }, callback, errback) => {
               console.log("📡 inicia connect recvTransport");
 
-              socketRef.current.emit("connectTransport", { transportId: transport.id, dtlsParameters, roomId }, ({ error }) => {
+              socketRef.current.emit("connectTransport", { 
+                transportId: transport.id, dtlsParameters, roomId }, ({ error }) => {
 
                   if (error) {
                     console.error("❌ Error en connectTransport:", error);
@@ -424,7 +423,6 @@ const VideoGeneral = () => {
               if (state === "connected") {
                 console.log("✅ 6. Transport CONECTADO - Resolviendo promesa!");
                 setState("RECV_TRANSPORT_READY");
-
 
                 // Procesar productores pendientes
                 // for (const producer of pendingProducersRef.current.values()) {
@@ -448,8 +446,6 @@ const VideoGeneral = () => {
                 // }
 
                 // pendingProducersRef.current.clear();
-                
-                
               }
               if (state === "failed" || state === "closed" || state === "disconnected") {
                 console.error(`❌ Transport ${state}`);
@@ -466,7 +462,6 @@ const VideoGeneral = () => {
 
   // consumir existentes
   const consumeExisting = async () => {
-
     const producers = await new Promise((resolve) => {
       socketRef.current.emit("getProducers", { roomId }, resolve);
       console.log("📡 Solicitando productores existentes para la sala", roomId);
@@ -502,7 +497,8 @@ const VideoGeneral = () => {
             producerId,
             rtpCapabilities: deviceRef.current.rtpCapabilities,
             roomId,
-            role
+            role,
+            // kind
           },
           (response) => {
             if (response?.error) {
@@ -532,7 +528,8 @@ const VideoGeneral = () => {
 
     if (existingConsumer) {
       existingConsumer.close();
-      consumersRef.current = consumersRef.current.filter(  c => c.id !== existingConsumer.id  );
+      consumersRef.current = consumersRef.current.filter(  
+        c => c.id !== existingConsumer.id  );
     }
     
     // Crear consumer con el transport (puede ser el mismo recvTransport)
@@ -541,27 +538,26 @@ const VideoGeneral = () => {
       producerId: consumerData.producerId,
       kind: consumerData.kind,
       rtpParameters: consumerData.rtpParameters,
+      // rtpCapabilities: consumerData.rtpCapabilities,
       role: consumerData.role,
     });
 
     console.log(`🎥 Consumer creado (${consumerData.isPipe ? 'vía pipe' : 'directo'})`);
     console.log("🎥 kind:", consumerData.kind);
     console.log("🎥 track:", consumer.track.kind);
-    console.log("🎥 role:", consumerData.role);
+    console.log("🎥 role del consumidor:", consumerData.role);
 
     // Resumir el consumer
     await new Promise((resolve) => {
       socketRef.current.emit("resume-consumer", { consumerId: consumer.id }, resolve ); 
     });
 
-    consumer.producerRole = consumerData.role;
     consumersRef.current.push(consumer);
-    console.log(" XX rol consumicor ",consumer.producerRole );
 
 
-    const targetVideo = consumer.producerRole === "admin" ? remoteRef.current : remoteRefTemp.current ;
+    const targetVideo = consumerData.role === "admin" ? remoteRef.current : remoteRefTemp.current ;
 
-    if (consumer.producerRole === "admin") {
+    if (consumerData.role === "admin") {
       setIsLive(true)
     } else {
       setIsLiveAttended(true)
@@ -574,8 +570,7 @@ const VideoGeneral = () => {
     const stream = targetVideo.srcObject;
 
     // Eliminar tracks antiguos del mismo tipo
-    stream.getTracks().filter(t => t.kind === consumerData.kind)
-                 .forEach(t => stream.removeTrack(t));
+    stream.getTracks().filter(t => t.kind === consumerData.kind).forEach(t => stream.removeTrack(t));
     
     // Agregar el nuevo track
     stream.addTrack(consumer.track);
@@ -624,11 +619,7 @@ const VideoGeneral = () => {
           console.log("role en owner", role);
         }
 
-
         console.log(`oye tengo un productor nuevo con rol ${data.producerId} ${data.role}  ` );
-
-
-        // Array.from(remoteProducerRef.current.keys()).find( c => c.producerId === producerId );
 
         await consume({
           producerId:data.producerId, 
@@ -639,9 +630,6 @@ const VideoGeneral = () => {
       } catch (err) {
         console.error("Error consumiendo producer", err);
       } 
-      // finally {
-      //   consumingRef.current.delete(data.producerId);
-      // }
     });
   };
 
@@ -696,12 +684,11 @@ const VideoGeneral = () => {
 
     socket = getSocket(apiUrl);
     socketRef.current = socket;
-    
 
     socketRef.current.on("connect", async () => {
       console.log("🟢 Conectado:", socket.id);
       await initFlow();
-      setSocketReady(true);
+      // setSocketReady(true);
     });
 
     if (remoteRef.current) {
@@ -709,7 +696,6 @@ const VideoGeneral = () => {
 
       socketRef.current.on("producer-closed", () => {
         console.log("📴 Stream detenido");
-      
       });
     }
   }, []);
@@ -717,7 +703,6 @@ const VideoGeneral = () => {
   const openBroadcasting = async () => {
       try {
         // 1. Obtener stream local
-        // setStream(true); //Inicia useEffect para generar proceso de streaming
         setIsAllowed(true);
         setIsBroadcasting(true);
 
@@ -748,14 +733,14 @@ const VideoGeneral = () => {
           
           <div 
           // style={{ width: '100%', aspectRatio: '16/9', backgroundColor: '#1a1a1a' }} 
-          className="rounded overflow-hidden">
-                <video 
-                    ref={remoteRef} 
-                    autoPlay 
-                    playsInline 
-                    muted 
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: isLive ? 'block' : 'none' }}
-                />
+            className="rounded overflow-hidden">
+              <video 
+                  ref={remoteRef} 
+                  autoPlay 
+                  playsInline 
+                  muted 
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: isLive ? 'block' : 'none' }}
+              />
           </div>
 
           {/* <h2 className="text-xl font-semibold mb-2 text-teal-600">Intervención asambleista</h2> */}
@@ -770,7 +755,6 @@ const VideoGeneral = () => {
                   muted 
                   style={{ width: '100%', height: '100%', objectFit: 'cover', display: isLiveAttended ? 'block' : 'none' }}
               />
-
           </div>
         </div>
 

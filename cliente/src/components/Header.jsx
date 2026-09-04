@@ -4,8 +4,11 @@ import '../styles/Header.css';
 import { UserContext } from "../components/UserContext";
 import { getSocket  } from "../hooks/socket";
 
+import API_URL from '../config/api';
+
 // import { UserContext } from "./UserContext";
-const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_URL_LOCAL; 
+// const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_URL_LOCAL; 
+
 const apiUrl = API_URL;
 
 

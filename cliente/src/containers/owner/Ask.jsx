@@ -17,7 +17,7 @@ const AskToParticipate = () => {
   const [displayTime, setDisplayTime] = useState("00:00");
   const { email, setCheckApprove } = useContext(UserContext);
   const [requestStatus, setRequestStatus] = useState(() => {
-  const saved = localStorage.getItem("requestStatus");
+    const saved = localStorage.getItem("requestStatus");
   let flag;
   
   // console.log("💾 [AskToParticipate] Estado cargado de localStorage:", saved);
@@ -120,6 +120,10 @@ const AskToParticipate = () => {
       
       // setReq(true);
       setRequestStatus('pending');
+
+      socketRef.current.on("canceled", () => {
+        setRequestStatus('none');
+      } )
 
     } catch (err) {
       console.error(err);

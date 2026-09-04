@@ -11,11 +11,11 @@ import { Server } from "socket.io";
 
 export default (httpServer) => {
     const io = new Server(httpServer, {
-        cors: {
-            origin: 'https://localhost:5173',
-            methods: ['GET', 'POST'],
-            credentials: true
-        }
+        // cors: {
+        //     origin: 'https://localhost:5173',
+        //     methods: ['GET', 'POST'],
+        //     credentials: true
+        // }
     });
 
     let connectedUsers = [];
@@ -361,9 +361,20 @@ export default (httpServer) => {
 
                 const transport = await createWebRtcTransport(peer.router);
 
+                // console.log("🧊 TRANSPORT CREADO:", {
+                //     id: transport.id,
+                //     iceCandidates: transport.iceCandidates
+                // });
+
                 transport.appData = { consumer };
 
                 peer.transports.push(transport);
+
+                // console.log("🧊 WebRTC Transport:", {
+                //     id: transport.id,
+                //     announcedIp: process.env.ANNOUNCED_IP,
+                //     iceCandidates: transport.iceCandidates
+                // });
 
                 transport.on("close", () => {
                     peer.transports = peer.transports.filter(t => t.id !== transport.id);
@@ -555,7 +566,7 @@ export default (httpServer) => {
         });
 
         // 🔹 Consumir (Recibir stream del SFU)
-        socket.on("consume", async ({ producerId, rtpCapabilities, roomId, role }, callback) => {
+        socket.on("consume", async ({ producerId, rtpCapabilities, roomId, role, kind }, callback) => {
 
             try {
 

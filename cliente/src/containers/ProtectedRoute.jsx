@@ -5,6 +5,9 @@ import axios from "axios";
 import { UserContext } from "../components/UserContext";
 import AppContext from '../context/AppContext';
 
+
+import API_URL from '../config/api';
+
 const ProtectedRoute = ({ children }) => {
   const {
     isAuthenticatedOwner,
@@ -15,7 +18,10 @@ const ProtectedRoute = ({ children }) => {
 
   // const {email, setEmail} = useState(false);
   
-  const { apiUrl } = useContext(AppContext);
+  // const { apiUrl } = useContext(AppContext);
+
+  const apiUrl = API_URL; 
+
 
   const [isVerifying, setIsVerifying] = useState(true);
   const navigate = useNavigate();
@@ -31,43 +37,49 @@ const ProtectedRoute = ({ children }) => {
           ? `${apiUrl}/api/admin-data`
           : `${apiUrl}/api/owner-data`;
 
-        try {
+        // try {
           const response = await axios.get(endpoint, { withCredentials: true });
           // console.log("✅ Autenticación verificada:", response.data);
 
-          if (response.data?.user === "administrador") {
+          const userObj = response.data?.user;
+          const role = typeof userObj === "object" ? userObj?.role : userObj;
+
+          // if (response.data?.user === "administrador") {
+          if (role === "administrador") {
             setIsAuthenticatedAdmin(true);
-            // localStorage.setItem("isAuthenticatedAdmin", "true");
-          } else if (response.data?.user === "owner") {
+            // localStorage.setItem("isAuthenticatedAdmin", "true");  
+          } else if /*(response.data?.user === "owner")*/ (role === "owner"){
             setIsAuthenticatedOwner(true);
             // localStorage.setItem("isAuthenticatedOwner", "true");
           } else {
             throw new Error("Usuario no autorizado");
           }
         } catch (error) {
-          if (error.response && error.response.status === 401) {
-            console.error("Sesión expirada o no válida", error);
-          }
+          console.warn("❌ No autenticado o sesión expirada:", error?.response?.data?.message || error.message);
+          // if (error.response && error.response.status === 401) {
+          //   console.error("Sesión expirada o no válida", error);
+          // }
           // No redirijas inmediatamente si estás en medio de la carga
+          // }
+        // } catch (error) {
+          // console.warn("❌ No autenticado:", error);
+
+          // Limpiar autenticación local
+          setIsAuthenticatedAdmin(false);
+          setIsAuthenticatedOwner(false);
+          localStorage.removeItem("isAuthenticatedAdmin");
+          localStorage.removeItem("isAuthenticatedOwner");
+          
+
+          // Redirigir al login correcto
+          // if (location.pathname.startsWith("/admin")) {
+          //   navigate("/admin", { replace: true });
+          // } else {
+          //   navigate("/", { replace: true });
+          // }
+        } finally {
+          setIsVerifying(false);
         }
-      } catch (error) {
-        console.warn("❌ No autenticado:", error);
-
-        // Limpiar autenticación local
-        localStorage.removeItem("isAuthenticatedAdmin");
-        localStorage.removeItem("isAuthenticatedOwner");
-        setIsAuthenticatedAdmin(false);
-        setIsAuthenticatedOwner(false);
-
-        // Redirigir al login correcto
-        // if (location.pathname.startsWith("/admin")) {
-        //   navigate("/admin", { replace: true });
-        // } else {
-        //   navigate("/", { replace: true });
-        // }
-      } finally {
-        setIsVerifying(false);
-      }
     };
 
     // Revisión inicial

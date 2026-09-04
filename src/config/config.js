@@ -9,6 +9,8 @@ export const config = {
   jwtSecret: process.env.JWT_SECRET_KEY,
   api_key:process.env.RESEND_API_KEY,
   announcedIp: process.env.ANNOUNCED_IP,
+  announcedIpLocal: process.env.ANNOUNCED_IP_LOCAL,
   ip: process.env.IP,
+  
 
 }

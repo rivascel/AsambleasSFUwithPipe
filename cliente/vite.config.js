@@ -15,11 +15,13 @@ export default defineConfig({
   base: '/',
   server: {
     https: {
-      key: fs.readFileSync('ssl/192.168.1.3+2-key.pem'),
-      cert: fs.readFileSync('ssl/192.168.1.3+2.pem'),
+      key: fs.readFileSync('ssl/192.168.1.3+3-key.pem'),
+      cert: fs.readFileSync('ssl/192.168.1.3+3.pem'),
     },
+
     // host: '192.168.1.3',
-    host:'0.0.0.0',
+    // host:'0.0.0.0',
+    host: true,
     port: 5173,
   }
 });

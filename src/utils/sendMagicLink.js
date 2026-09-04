@@ -23,9 +23,9 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-export default async function sendMagicLink(to, role, token) {
-  const magicLink = `${config.BackEndBaseUrl}/api/magic-link?token=${token}`;
-
+export default async function sendMagicLink( email, role, token,) {
+    const magicLink = `${config.BackEndBaseUrl}/api/magic-link?token=${token}`;
+  
   // try {
   //   const data = await resend.emails.send({
       
@@ -65,7 +65,7 @@ export default async function sendMagicLink(to, role, token) {
       const data = await transporter.sendMail({
         
         from: '"Asamblea General" <${process.env.SMTP_USER}>', // O tu correo verificado
-        to: to,
+        to: email,
         subject: 'Tu enlace mágico de acceso de ' + role,
         html: `
           <p>Hola 👋</p>
@@ -96,9 +96,6 @@ export default async function sendMagicLink(to, role, token) {
   // } else {
   //   console.error("no se envio enlace")
   // }
-
-
-
 
   //====================
 //   try {

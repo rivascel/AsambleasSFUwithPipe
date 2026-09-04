@@ -41,8 +41,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 router.post("/logout", (req, res) => {
-  res.clearCookie("username");
-  res.json({ message: "Sesión cerrada" });
+    const clearOptions = { path: '/' };
+    res.clearCookie('token', clearOptions);
+    res.clearCookie('session', clearOptions);
+    res.clearCookie('username', clearOptions);
+    return res.json({ message: "Sesión cerrada correctamente" });
+
 });
 
 
@@ -232,8 +236,11 @@ router.post("/registro", (req, res)=>{
 router.post('/request-magic-link', async (req, res) => {
     const { email, role } = req.body;
 
-    if (!email) {
-        return res.status(400).json({ message: 'Email es requerido' });
+    if (!email  ) {
+        return res.status(400).json({ message: 'Email y rol son requeridos' });
+    }
+        if ( !role ) {
+        return res.status(400).json({ message: 'rol son requeridos' });
     }
 
     // Generar un token JWT con un tiempo de expiración (15 minutos)
@@ -254,6 +261,7 @@ router.get('/owner-data', requireAuth, (req, res) => {
     const email = req.user ? req.user.email : "Email no encontrado";
     // const email = req.user.email;
     res.json({
+        message: "Datos de owner obtenidos correctamente",
         user: "owner",
         email: email
     });
@@ -271,14 +279,10 @@ router.get('/admin-data', requireAuth, (req, res) => {
 
 // Endpoint para manejar el enlace mágico
 router.get('/magic-link', (req, res) => {
-  // 1. Limpiar cookies viejas para evitar conflictos de roles
-  res.clearCookie('session');
-  res.clearCookie('token');
-  res.clearCookie('username');
 
-  const { email, role, token } = req.query;
+  const {   token } = req.query;
 
-  console.log("🔗 Magic Link accessed with token:", token, email, role);
+  console.log("🔗 Magic Link accessed with token:", token);
   if (!token ) {
     return res.status(400).json({ message: 'Token es requerido' });
   }
@@ -288,32 +292,84 @@ router.get('/magic-link', (req, res) => {
     // Usamos el secret directamente para evitar fallos de referencia circular
     const userData = jwt.verify(token, process.env.JWT_SECRET_KEY);
 
+// 1. Limpiar cookies usando la misma ruta base
+    const clearOptions = { path: '/' };
+    res.clearCookie('session', clearOptions);
+    res.clearCookie('token', clearOptions);
+    res.clearCookie('username', clearOptions);
+
+            // 3. Configurar cookies
+//     const isProduction = process.env.NODE_ENV === 'production';
+
+//     const cookieOptions = {
+//       httpOnly: true, // Cambiamos a true por seguridad, el middleware las leerá igual
+//     //   secure: true,
+//     secure: false, // ⚠️ false para desarrollo local
+//   sameSite: 'Lax', // ⚠️ 'Lax' para desarrollo, no 'None'
+//     //   secure: isProduction,
+//     //    sameSite: isProduction ? 'None' : 'Lax', // 'Lax' funciona mejor en desarrollo
+//     //   sameSite: 'None',
+//       maxAge: 1000 * 60 * 60 * 24, // 24 horas
+//       path: '/',
+//     };
+
+
+    // 2. Determinar si la petición actual viaja sobre HTTPS
+    // const isHttps = req.secure || req.headers['x-forwarded-proto'] === 'https';
+    const isHttps = req.secure || req.headers['x-forwarded-proto'] === 'https';
+    
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    /* 
+      REGLAS DE COOKIES:
+      - secure: Debe ser true si la conexión es HTTPS (obligatorio para SameSite=None).
+      - sameSite: 
+        * 'None' en producción o cuando frontend y backend están en dominios/puertos distintos sobre HTTPS.
+        * 'Lax' cuando trabajas en HTTP local (localhost / IP de red local).
+    */
     const cookieOptions = {
-      httpOnly: true, // Cambiamos a true por seguridad, el middleware las leerá igual
-      secure: true,
-      sameSite: 'None',
+      httpOnly: true,
+      secure: isHttps, 
+      sameSite: isHttps ? 'None' : 'Lax',
       maxAge: 1000 * 60 * 60 * 24, // 24 horas
       path: '/',
     };
 
     // 3. Determinar el rol (puedes basarte en una propiedad del token)
-    // Supongamos que tu token tiene { email, role }
-    const role = userData.role || 'owner'; // por defecto owner si no viene en el token
+    // Supongamos que tu token tiene { email, role 
     
+
+    const role = userData.role || 'owner'; // por defecto owner si no viene en el token
+    const frontendUrl = process.env.FRONTEND_URL;
+
 
     // 4. Establecer cookies unificadas
     res.cookie('session', JSON.stringify({ 
         role: userData.role, 
         email: userData.email 
-    }), { ...cookieOptions, httpOnly: false }); // httpOnly false para que el front vea el rol si lo necesita
+    }), { ...cookieOptions, 
+        httpOnly: false,
+        //   secure: false,
+        //     sameSite: 'Lax'
+    
+    }); // httpOnly false para que el front vea el rol si lo necesita
+
+    // Cookie del token
+    res.cookie('token', token, cookieOptions,
+    );
+
+    console.log(`✅ Cookies establecidas para: ${userData.email} | Rol: ${role}`);
+
+    // 4. Redirigir según el rol
 
     if (role === 'owner') {
-        res.cookie('token', token, cookieOptions);
-        console.log(`✅ Cookies de Owner para: ${userData.email}`);
-        return res.redirect(`${process.env.FRONTEND_URL}/owner`);
+        // res.cookie('token', token, cookieOptions);
+        console.log(`✅ Cookies de Owner para: ${userData.email}  ${userData.role}`);
+        return res.redirect(`${process.env.FRONTEND_URL}/owner`); 
     } else if (role === 'administrador') {
         console.log(`✅ Cookies de Administrador para: ${userData.email}`);
-        return res.redirect(`${process.env.FRONTEND_URL}/admin/dashboard`);
+        return res.redirect(`${frontendUrl}/admin/dashboard`);
+
     } else {
         console.warn('❌ Rol desconocido en el token');
         return res.status(400).json({ message: 'Rol desconocido' });
@@ -478,10 +534,6 @@ router.post('/answer', async (req, res) => {
     res.status(500).json({ error: 'Error del servidor' });
   }
 });
-
-
-
-
 
 //================== ENDPOINTS WEBRTC-CLIENT - SUPABASE============================
 router.post('/activate-call', async (req, res)=> {

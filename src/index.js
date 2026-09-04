@@ -1,13 +1,6 @@
-// process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-
-// require('dotenv').config(); // ruta relativa al root del proyecto
-// import dotenv from 'dotenv';
-// dotenv.config();
-
 import 'dotenv/config';
 
 
-// const express = require("express");
 import express from "express";
 import realTimeServer from "./realTimeServer.js";
 import cookieParser from "cookie-parser";
@@ -25,15 +18,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);  
 
 
-// app.use(cors({
-//   origin: ['https://localhost:5173','https://localhost:3000'],
-//   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-//   allowedHeaders: ['Content-Type', 'Authorization'],
-//   credentials: true,
-//   optionsSuccessStatus: 200 // Para navegadores antiguos
-// }));
-
-app.set('trust proxy', 1);
+if (process.env.NODE_ENV === 'production') {
+  // En producción, confía en el proxy (Nginx/Caddy/Render) para manejar HTTPS y encabezados de proxy
+  app.set('trust proxy', 1);
+} 
 
 // 2. Configura CORS de forma explícita (evita el origin: true si es posible)
 const allowedOrigins = [
@@ -44,7 +32,13 @@ const allowedOrigins = [
   'http://localhost:3000',
   'https://asambleasgeneral.onrender.com',
   'https://192.168.1.3:5173',
+  'http://192.168.1.3:5173',
+  'http://192.168.1.3:3000',
   'https://192.168.1.3:3000',
+  'https://172.28.196.123:5173',
+  'https://172.28.196.123:3000',
+  'http://172.28.196.123:5173',
+  'http://172.28.196.123:3000'
 ];
 
 const originConfig = process.env.NODE_ENV === 'development' 
@@ -73,6 +67,17 @@ app.use(cors({
     exposedHeaders: ['Set-Cookie']
 }));
 
+// app.use(
+//   helmet({
+//     contentSecurityPolicy: {
+//       directives: {
+//         defaultSrc: ["'self'"],
+//         imgSrc: ["'self'", "data:", "blob:", "http:", "https:"],
+//         connectSrc: ["'self'", "http:", "https:", "ws:", "wss:"],
+//       },
+//     },
+//   })
+// );
 
 app.use(cookieParser()); // << esto debe ir ANTES de cualquier `app.use(router)`
 
@@ -107,8 +112,8 @@ if (process.env.NODE_ENV === 'development') {
   // Único caso donde Node mismo necesita hablar HTTPS directamente,
   // porque no hay Nginx/Caddy/Render delante hacienda de proxy TLS
   const options = {
-    key: fs.readFileSync(path.resolve(__dirname, 'ssl/192.168.1.3+2-key.pem')),
-    cert: fs.readFileSync(path.resolve(__dirname, 'ssl/192.168.1.3+2.pem')),
+    key: fs.readFileSync(path.resolve(__dirname, 'ssl/192.168.1.3+3-key.pem')),
+    cert: fs.readFileSync(path.resolve(__dirname, 'ssl/192.168.1.3+3.pem')),
   };
   server = https.createServer(options, app);
 } else {
@@ -116,6 +121,7 @@ if (process.env.NODE_ENV === 'development') {
   server = http.createServer(app);
 }
 
+// server = http.createServer(app);
 
 //settings
 app.set("port", process.env.PORT || 3000);
@@ -125,14 +131,6 @@ app.set("host", "0.0.0.0");
 const PORT = app.get("port");
 const HOST = "0.0.0.0";
 
-// console.log("NODE_ENV:", process.env.NODE_ENV);
-// console.log("PORT:", process.env.PORT);
-// console.log("HOST:", HOST);
-// console.log("HTTPS:", process.env.NODE_ENV === 'development');
-
-
-
-// server = http.createServer(app);
 realTimeServer(server);
 
 

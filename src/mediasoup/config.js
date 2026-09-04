@@ -1,6 +1,25 @@
 import { config } from  "../config/config.js";
 
+import os from "os";
+
+// Función para obtener la IP privada real de la máquina servidor
+function getLocalIp() {
+  const interfaces = os.networkInterfaces();
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name]) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        return iface.address;
+      }
+    }
+  }
+  return '127.0.0.1';
+}
+
+console.log(`📡 Mediasoup en: ${config.ip || "0.0.0.0"} | Anunciando IP a los clientes: ${config.announcedIp}`);
+
+
 export const configuration = {
+
   mediasoup: {
     worker: {
       rtcMinPort: 40000,
@@ -37,21 +56,34 @@ export const configuration = {
         {
           protocol: "udp",
           ip: config.ip, // Escucha en todas las interfaces de red
-          announcedAddress: config.announcedIp, // luego pones tu IP pública
+          announcedAddress: config.announcedIp /*|| getLocalIp()*/
 
         },
         {
           protocol: "tcp",
           ip: config.ip, // Escucha en todas las interfaces de red
-          announcedAddress: config.announcedIp, // luego pones tu IP pública
+          announcedAddress: config.announcedIp /*|| getLocalIp()*/
 
-        }
+        },
+        {
+        protocol: "udp",
+        ip: config.ip, // Escucha en todas las interfaces de red
+        // announcedAddress: config.announcedIpLocal /*|| getLocalIp()*/
+        announcedAddress: '127.0.0.1'
+
+      },
+      {
+        protocol: "tcp",
+        ip: config.ip, // Escucha en todas las interfaces de red
+        announcedAddress: '127.0.0.1'
+
+      }
         
       ],
 
       enableTcp: true,
-      enableUdp: true, // Deshabilitar UDP
-      preferUdp: true, // Priorizar TCP
+      enableUdp: true, 
+      preferUdp: true, 
       iceTransportPolicy: 'all', // O 'relay' si quieres forzar TURN
       
       initialAvailableOutgoingBitrate: 1000000,
@@ -62,7 +94,6 @@ export const configuration = {
       
     },
 
-    
     pipeTransport: {
       listenIp: "127.0.0.1",
       enableRtx: true,

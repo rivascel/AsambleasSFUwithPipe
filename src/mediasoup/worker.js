@@ -12,6 +12,9 @@ export async function createWorkers() {
     const worker = await mediasoup.createWorker({
       rtcMinPort: configuration.mediasoup.worker.rtcMinPort,
       rtcMaxPort: configuration.mediasoup.worker.rtcMaxPort,
+
+       logLevel: configuration.mediasoup.worker.logLevel,
+      logTags: configuration.mediasoup.worker.logTags,
     });
 
     worker.on("died", () => {

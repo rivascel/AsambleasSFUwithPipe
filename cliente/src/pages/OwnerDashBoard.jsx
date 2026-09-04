@@ -11,9 +11,12 @@ import Questions from '../containers/owner/Questions';
 import { UserContext } from "../components/UserContext";
 import AppContext from '../context/AppContext';
 import { getSocket  } from "../hooks/socket";
-import Title from '../components/components/Title';
+import { useLogoutOnClose } from '../hooks/useLogoutOnClose';
 
-const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_URL_LOCAL; 
+import API_URL from '../config/api';
+
+// const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_URL_LOCAL; 
+
 const apiUrl = API_URL;
 
 // Verificar que apiUrl esté definida
@@ -30,14 +33,16 @@ const Section = ({ title, children }) => (
 );
 
 const DashBoardOwner = () => {
+   useLogoutOnClose();
   // const { apiUrl } = useContext(AppContext);
 
   // const { apiUrl } = axios.get(`${API_URL}/api/request-magic-link`);
     // const [email, setEmail] = useState(null);
+
   const [error, setError] = useState(null);
   // const [quorum, setQuorum] = useState(null);
   // const [votesData, setVotesData] = useState({}); // lista de todos los propietarios
-  const { email, login, role, setQuorum, setApprovalVotes, setRejectVotes, setBlankVotes, ownerData } = useContext(UserContext);
+  const { email, login, logout, role, setQuorum, setApprovalVotes, setRejectVotes, setBlankVotes, ownerData } = useContext(UserContext);
   const ownerDataRef = useRef(ownerData);
   const sesion = useRef(null);
   const socketRef = useRef(null);
@@ -135,7 +140,7 @@ const DashBoardOwner = () => {
     const handleUserConnected = async (connectedEmail) => {
       if (connectedEmail === email) {
         await socketRef.current.emit("requestJoinSesion");
-        await !!ownerDataRef.current
+        !!ownerDataRef.current
         await ownerRegister(email, sesion.current);
         fetchOwners();
       };
@@ -145,6 +150,10 @@ const DashBoardOwner = () => {
 
 
     return () => socketRef.current.off("userConnected", handleUserConnected);
+
+
+
+    
   }, [email]);      
 
   useEffect(() => {

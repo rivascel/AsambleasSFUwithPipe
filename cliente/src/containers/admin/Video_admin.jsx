@@ -7,13 +7,16 @@ import { getSocket  } from "../../hooks/socket";
 import useVideoQuality from "../../hooks/useVideoQuality";
 import useVisibility from "../../hooks/useVisibility";
 import { listenToRequests } from "../../../src/supabase-client";
+
+import API_URL from '../../config/api';
 // import sinSenalImage from '..../assets/img/sin_senal.png'; 
 // import sin from '../../assets'
 
 // import { consumersRef, remoteProducerRef, consume, showVideo } from "../../hooks/consume";
 
+const apiUrl = API_URL;
 const VideoGeneral = () => {
-  const { apiUrl } = useContext(AppContext);
+  // const { apiUrl } = useContext(AppContext);
   const [isBroadcasting, setIsBroadcasting] = useState(false);
   const localRef = useRef();
   const remoteRef = useRef();
@@ -95,7 +98,6 @@ const VideoGeneral = () => {
   const initFlow = async () => {
     await joinRoom();
     await loadDevice();
-
     await setupConsumerFlow();
   };
 
@@ -104,9 +106,9 @@ const VideoGeneral = () => {
       console.warn("⚠️ Ya estás produciendo");
       return;
     }
+    setIsLive(true);
     await createSendTransport();
     await produce();
-    setIsLive(true);
   }
 
   useEffect(() => {
@@ -169,11 +171,6 @@ const VideoGeneral = () => {
       localRef.current.srcObject = null;
     }
     console.log("🛑 Producción detenida");
-
-    // return () => {
-    //   socketRef.current.off("producerClosed");
-    // }
-
   };
 
   // 4. joinRoom
@@ -235,6 +232,18 @@ const VideoGeneral = () => {
             );
           });
 
+          transport.on("connectionstatechange", (state) => {
+              console.log("📡 SEND connectionstatechange:", state);
+               if (state === "failed") {
+                console.log("❌ SEND TRANSPORT FAILED:", {
+                    id: sendTransport.id,
+                    connectionState: transport.connectionState,
+                });
+            }
+          });
+
+
+
           transport.on("produce", async ({ kind, rtpParameters }, callback, errback) => {
             
             console.log("📡 produce event:", kind);
@@ -262,6 +271,16 @@ const VideoGeneral = () => {
           // Monitoreo de estados
           transport.on("connectionstatechange", (state) => {
             console.log(`📡 5. connectionstatechange: ${state}`);
+
+          transport.on("icegatheringstatechange", (state) => {
+              console.log("🧊 ICE gathering state:", state);
+          });
+
+          transport.on("iceselectedcandidatepairchange", (pair) => {
+              console.log("🧊 ICE selected candidate pair:", pair);
+          });
+
+
             
             if (state === "connected") {
               console.log("✅ 6. Transport CONECTADO - Resolviendo promesa!");
@@ -359,15 +378,13 @@ const VideoGeneral = () => {
       let newStream;
 
       try {
-        // Intentamos abrir la cámara con total flexibilidad de formato
 
-        // 2. Pedir el nuevo stream al navegador usando estrictamente el ID seleccionado
         newStream = await navigator.mediaDevices.getUserMedia({
           video: { deviceId: { exact: targetDeviceId } ,
             // Quitamos restricciones de resolución estrictas para que la cámara USB 
               // elija su formato nativo (sea MJPEG o YUY2)
             // Configuración ideal para tu Samsung Full HD
-            width: { min: 640, ideal: 1920, max: 1920 },
+            width: { min: 640, ideal: 1920, max: 480 },
             height: { min: 480, ideal: 1080, max: 1080 },
             frameRate: { ideal: 30, max: 60 }
           }
@@ -485,17 +502,14 @@ const VideoGeneral = () => {
     await createRecvTransport();
 
      await consumeExisting();
-
-
   };
 
   // createRecvTransport
   const createRecvTransport = () => {
 
     return new Promise((resolve, reject) => {
-      socketRef.current.emit("createTransport", { consumer: true, roomId, email },
-
-      (params) => {
+      socketRef.current.emit("createTransport", 
+        { consumer: true, roomId, email }, (params) => {
 
         const transport =  deviceRef.current.createRecvTransport(params);
         recvTransportRef.current = transport;
@@ -513,7 +527,6 @@ const VideoGeneral = () => {
                 return errback(error);
               }
               console.log("✅ recvTransport DTLS conectado");
-
               callback();
               // No reseteamos isConnecting a false porque ya está conectado permanentemente
             } 
@@ -521,7 +534,6 @@ const VideoGeneral = () => {
         });
 
         transport.on("connectionstatechange", async (state) => {
-
         console.log("📡 recvTransport state:", state);
 
         if (state === "connected") {
@@ -547,7 +559,6 @@ const VideoGeneral = () => {
           // }
           // pendingProducersRef.current.clear();
         }
-          
 
         if (state === "failed" || state === "closed" || state === "disconnected") {
               console.error(`❌ Transport ${state}`);
@@ -570,8 +581,6 @@ const VideoGeneral = () => {
       console.log("📡 Solicitando productores existentes para la sala", roomId);
     });
 
-     console.log("📡 respuesta getProducers", producers);
-
     if (producers === null || producers.length === 0) {
       console.log("📡 No hay productores disponibles");
       return;
@@ -580,8 +589,6 @@ const VideoGeneral = () => {
     console.log("producers:", producers);
 
     for (const { producerId, kind, role } of producers) {
-        console.log("producer:", producers);
-
       if (remoteProducerRef.current.has(producerId) && role === "owner") continue; 
 
       remoteProducerRef.current.set(producerId, { kind, role: role });
@@ -675,7 +682,7 @@ const VideoGeneral = () => {
 
       // Eliminar tracks antiguos del mismo tipo
       stream.getTracks().filter(t => t.kind === consumerData.kind)
-                  .forEach(t => stream.removeTrack(t));
+        .forEach(t => stream.removeTrack(t));
       
 
       // Agregar el nuevo track
@@ -698,8 +705,6 @@ const VideoGeneral = () => {
 
       return consumer;
   };
-
-
   // recibe el consumer para mostrar en video
 //   function showVideo (targetVideo) {
 
@@ -736,7 +741,6 @@ const VideoGeneral = () => {
 
 // }
 
-
   const listenForNewProducers = () => {
       
       socketRef.current.on("new-producer", async (data) => {
@@ -758,9 +762,7 @@ const VideoGeneral = () => {
             console.log("role en admin", role);
           }
 
-
           console.log(`oye tengo un productor nuevo con rol ${data.producerId} ${data.role}  ` );
-
 
           await consume({
             producerId:data.producerId, 
@@ -838,7 +840,6 @@ const VideoGeneral = () => {
 
       socketRef.current.on("producer-closed", () => {
         console.log("📴 Stream detenido");
-      
       });
     }
   }, []);
@@ -910,10 +911,7 @@ const VideoGeneral = () => {
                 setSelectedDevice(newId);
                 changeCamera(newId);
               }}
-                
-                // setSelectedDevice(e.target.value)}
 
-              // onClick={changeDevices}
               className="bg-red-600 text-blue px-6 py-2 rounded hover:bg-red-700 disabled:bg-gray-400"
             >
               {videoDevice.map(device => (

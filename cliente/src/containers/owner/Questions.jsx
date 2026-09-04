@@ -5,7 +5,10 @@ import { UserContext } from "../../components/UserContext";
 import AppContext from '../../context/AppContext';
 import { getSocket  } from "../../hooks/socket";
 
-const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_URL_LOCAL; 
+import API_URL from '../../config/api';
+// const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_URL_LOCAL; 
+
+
 const apiUrl = API_URL;
 
 const Questions = () => {

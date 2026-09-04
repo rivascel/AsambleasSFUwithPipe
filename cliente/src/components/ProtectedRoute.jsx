@@ -1,10 +1,15 @@
 // Crea un componente ProtectedRoute
 import AppContext from '../context/AppContext';
 
+
+import API_URL from '../config/api';
+
+const apiUrl = API_URL;
+
 const ProtectedRoute = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const navigate = useNavigate();
-  const { apiUrl } = useContext(AppContext);
+  // const { apiUrl } = useContext(AppContext);
 
   useEffect(() => {
     const verifyAuth = async () => {
