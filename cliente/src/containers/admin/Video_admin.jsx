@@ -122,18 +122,34 @@ const VideoGeneral = () => {
         }
   
         if (!producerData) return;
+
+              const closedConsumer = consumersRef.current.find(c => c.producerId === producerId);
+      if (closedConsumer) {
+        closedConsumer.close();
+        const targetVideo = producerData.role;
+        if (targetVideo?.srcObject) {
+          targetVideo.srcObject.getTracks()
+            .filter(t => t.kind === closedConsumer.kind)
+            .forEach(t => { t.stop(); targetVideo.srcObject.removeTrack(t); });
+        }
+      }
   
         remoteProducerRef.current.delete(producerId);
 
         consumersRef.current = consumersRef.current.filter( (c) => c.producerId !== producerId );
   
-        const isOwner = producerData.role === "owner";
-        console.log("es owner", isOwner);
+        // const isOwner = producerData.role === "owner";
+        // console.log("es owner", isOwner);
   
-        if (isOwner) {
-          setIsLive(false);
-        } else {
-          // setIsLiveAttended(false);
+        // if (isOwner) {
+        //   setIsLive(false);
+        // } else {
+        //   // setIsLiveAttended(false);
+        //   setIsLiveOwner(false);
+        // }
+
+        if (producerData.role === "owner") setIsLive(false);
+        else {
           setIsLiveOwner(false);
         }
       };
@@ -147,7 +163,7 @@ const VideoGeneral = () => {
       return () => {
         socketRef.current.off("producerClosed", handler);
       };
-  }, []);
+  }, [stream]);
   
 
   const stopProducing = async () => {
@@ -670,7 +686,19 @@ const VideoGeneral = () => {
 
     
       // const targetVideo = consumer.producerRole === "admin" ? localRef.current : remoteRef.current;
-      const targetVideo = remoteRef.current;
+      const targetVideo = 
+      // () => 
+        // {
+        // if (consumerData.role === "admin") {
+        // setRemote(true);
+        remoteRef.current;
+      // } 
+      // else {
+      //   setRemote(false);
+      // }
+    // };
+      
+
 
       if (!targetVideo.srcObject) {
         setIsLiveOwner(true);

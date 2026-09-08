@@ -90,30 +90,75 @@ const VideoGeneral = () => {
         // const userData = await response.json();
         const userById = approvedUsersById || [];
 
-        unsuscribeChannel  = listenToRequests(roomId, {componentId: 'VideoOwner'}, (approver) => {
-          
-          if (approver.status === 'approved') {
-            // console.log("Viewer aprobado via listener:", approver.user_id);
-            if (!viewerReady) { 
-              setViewerReady(true);
-              setStream(true);
-            }
+        
+        socketRef.current.on("approved", (data) => { 
+          // ✅ Verificar que el userId del evento coincida con el email actual
+          if (data.userId !== email) {
+            console.log("Este evento no es para este usuario");
+            return; // No hacer nada si no es para este usuario
           }
-          if (approver.status === null || approver.status === undefined) {
-            // console.log("Viewer aprobado via listener:", approver.user_id);
-            if (viewerReady) {
-              setViewerReady(false);
-              setStream(false);
-            }
+
+          console.log("Este usuario ha sido aprobado:", data.userId);
+
+          if (!viewerReady) { 
+            setViewerReady(true);
+            setStream(true);
           }
         });
 
-        if (userById.includes(email)) {
-          console.log("Usuario aprobado para enviar stream...");
-          if (!viewerReady) setViewerReady(true);
-        } else {
-          console.log("Usuario aun no aprobado");
-        };
+            // if (userById.includes(email)) {
+            //   console.log("Usuario aprobado para enviar stream...");
+            //   if (!viewerReady) {
+            //     setViewerReady(true);
+            //     setStream(true);
+            //   }
+            // } else {
+            //   console.log("Usuario aun no aprobado");
+            // };
+
+            // });
+
+        unsuscribeChannel  = listenToRequests(roomId, {componentId: 'VideoOwner'}, (approver) => {
+          
+          if (approver.status === 'approved') {
+            console.log("Viewer aprobado via listener:", approver.user_id);
+
+            if (approver.user_id === email) {
+              if (!viewerReady) {
+                setViewerReady(true);
+                setStream(true);
+              }
+            }
+
+
+              // if (approver.status === null || approver.status === undefined) {
+              // console.log("Viewer aprobado via listener:", approver.user_id);
+              // if (viewerReady) {
+              //   setViewerReady(false);
+              //   setStream(false);
+              // }
+              // if (userById.includes(email)) {
+              //   console.log("Usuario aprobado para enviar stream...");
+              //   if (viewerReady) {
+              //     setViewerReady(true);
+              //     setStream(false);
+              //   }
+              // } else {
+              //   console.log("Usuario aun no aprobado");
+              // };
+
+          }
+          });
+
+          // if (userById.includes(email)) {
+          //   console.log("Usuario aprobado para enviar stream...");
+          //   if (!viewerReady) {
+          //     setViewerReady(true);
+          //     setStream(false);
+          //   }
+          // } else {
+          //   console.log("Usuario aun no aprobado");
+          // };
 
       } catch (error) {
         console.error("Error fetching user", error);
@@ -124,7 +169,7 @@ const VideoGeneral = () => {
       if (unsuscribeChannel) unsuscribeChannel.removeChannel();
     }
     
-  },[checkApprove, roomId, email, ownerInfo]);
+  },[/*checkApprove, roomId, email, ownerInfo*/]);
   
   // 1. Estado central (useRef + estado lógico)
   const setState = (newState) => {
@@ -137,7 +182,6 @@ const VideoGeneral = () => {
     await joinRoom();
     await loadDevice();
     await setupConsumerFlow();
-
   };
 
   const startProducing = async () => {
@@ -146,42 +190,65 @@ const VideoGeneral = () => {
       return;
     }
     setIsLiveOwner(true);
+    setIsAllowed(true);
     await createSendTransport();
     await produce();
   }
 
   useEffect(() => {
+
     const handler = ( producerId ) => {
 
       console.log("remoteProducerRef en useEffect", remoteProducerRef);
 
       const producerData = remoteProducerRef.current.get(producerId);
-      // if (producerData) {
-      //   const { kind, role } = producerData;
-      // }
+      console.log("Datos del productor cerrado:", producerData);
 
       if (!producerData) return;
+
+      const closedConsumer = consumersRef.current.find(c => c.producerId === producerId);
+      if (closedConsumer) {
+        closedConsumer.close();
+        const targetVideo = producerData.role;
+        if (targetVideo?.srcObject) {
+          targetVideo.srcObject.getTracks()
+            .filter(t => t.kind === closedConsumer.kind)
+            .forEach(t => { t.stop(); targetVideo.srcObject.removeTrack(t); });
+        }
+      }
 
       remoteProducerRef.current.delete(producerId);
 
       consumersRef.current = consumersRef.current.filter( (c) => c.producerId !== producerId );
 
-      const isAdmin = producerData.role === "admin";
+      // const isAdmin = producerData.role === "admin";
 
-      if (isAdmin) {
-        console.log("is true admin", isAdmin);
-        setIsLive(false);
-      } else {
+      // if (isAdmin) {
+      //   console.log("is true admin", isAdmin);
+      //   setIsLive(false);
+      // // } else if (setIsLiveAttended(true)) {
+      // } else {
+      //   setIsLiveAttended(true) ?  setIsLiveAttended(false) : setIsLiveAttended(false);
+      //   setIsLiveOwner(true) ? setIsLiveOwner(false) : setIsLiveOwner(false);
+        // setIsLiveAttended(false);
 
-        setIsLiveAttended(true) ?  setIsLiveAttended(false) : setIsLiveAttended(false);
-        setIsLiveOwner(true) ? setIsLiveOwner(false) : setIsLiveOwner(false);
-      }
+      // }
+      // else {
+      //   // setIsLiveOwner(true) ? setIsLiveOwner(false) : setIsLiveOwner(false);
+      //   setIsLiveOwner(false);
+      // }
 
         // setIsLiveAttended(false) || setIsLiveOwner(false);
       // }
+
+      if (producerData.role === "admin") setIsLive(false);
+      else if (producerData.role === "owner") setIsLiveAttended(false);
+      else setIsLiveOwner(false);
     };
 
     if (socketRef.current) {
+      socketRef.current.on("canceled", handler);
+
       socketRef.current.on("producerClosed", handler );
     } else {
     console.log("❌ socketRef.current es null");
@@ -190,7 +257,7 @@ const VideoGeneral = () => {
     return () => {
       socketRef.current.off("producerClosed", handler);
     };
-  }, []);
+  }, [stream]);
 
   const stopProducing =  () => {
     // cerrar producers
@@ -289,7 +356,7 @@ const VideoGeneral = () => {
                 kind,
                 rtpParameters,
                 roomId,
-                role: "admin"
+                role: roleRef.current
               });
               
               callback({ id }); 
@@ -376,7 +443,6 @@ const VideoGeneral = () => {
 
     
     setState("PRODUCING");
-    setIsAllowed(true);
   };
 
   // 7. FLUJO VIEWER
@@ -524,7 +590,9 @@ const VideoGeneral = () => {
   // Función auxiliar para crear y configurar el consumer
   const createAndSetupConsumer = async (consumerData) => {
     // Limpiar consumer existente del mismo tipo
-    const existingConsumer = consumersRef.current.find( c => c.kind === consumerData.kind && c.producerRole === consumerData.role );
+    const existingConsumer = consumersRef.current.find( 
+      c => c.kind === consumerData.kind && c.producerRole === consumerData.role 
+    );
 
     if (existingConsumer) {
       existingConsumer.close();
@@ -541,6 +609,8 @@ const VideoGeneral = () => {
       // rtpCapabilities: consumerData.rtpCapabilities,
       role: consumerData.role,
     });
+    consumer.appRole = consumerData.role; // propiedad propia, no nativa de mediasoup
+
 
     console.log(`🎥 Consumer creado (${consumerData.isPipe ? 'vía pipe' : 'directo'})`);
     console.log("🎥 kind:", consumerData.kind);
@@ -555,13 +625,26 @@ const VideoGeneral = () => {
     consumersRef.current.push(consumer);
 
 
-    const targetVideo = consumerData.role === "admin" ? remoteRef.current : remoteRefTemp.current ;
+    const targetVideo = (() => {
+      if (consumerData.role === "admin") {
+        setIsLive(true)
+        return remoteRef.current;
+      } else if (consumerData.role === "owner") {
+        setIsLiveAttended(true)
+        return remoteRefTemp.current;
+      } else {
+        return null;
+      }
 
-    if (consumerData.role === "admin") {
-      setIsLive(true)
-    } else {
-      setIsLiveAttended(true)
-    }
+    })();
+    
+    // const targetVideo = consumerData.role === "admin" ? remoteRef.current : remoteRefTemp.current ;
+
+    // if (consumerData.role === "admin") {
+    //   setIsLive(true)
+    // } else {
+    //   setIsLiveAttended(true)
+    // }
     
     if (!targetVideo.srcObject) {
       targetVideo.srcObject = new MediaStream();
@@ -686,24 +769,26 @@ const VideoGeneral = () => {
     socketRef.current = socket;
 
     socketRef.current.on("connect", async () => {
-      console.log("🟢 Conectado:", socket.id);
+      if (stateRef.current !== "IDLE") {
+        console.log("Reconexión detectada, evitando reinit duplicado");
+        return; // o implementa una limpieza explícita de listeners/transports antes de reinicializar
+      }
       await initFlow();
-      // setSocketReady(true);
     });
 
     if (remoteRef.current) {
       remoteRef.current.srcObject = null;
 
-      socketRef.current.on("producer-closed", () => {
-        console.log("📴 Stream detenido");
-      });
+      // socketRef.current.on("producer-closed", () => {
+      //   console.log("📴 Stream detenido");
+      // });
     }
   }, []);
   
   const openBroadcasting = async () => {
       try {
         // 1. Obtener stream local
-        setIsAllowed(true);
+        // setIsAllowed(true);
         setIsBroadcasting(true);
 
       } catch (error) {
@@ -739,7 +824,7 @@ const VideoGeneral = () => {
                   autoPlay 
                   playsInline 
                   muted 
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: isLive ? 'block' : 'none' }}
+                  style={{ width: '100%', height: '80%', objectFit: 'cover', display: isLive ? 'block' : 'none' }}
               />
           </div>
 
@@ -767,7 +852,7 @@ const VideoGeneral = () => {
             ></video>
 
             <div className="controls">
-              {!isAllowed ? 
+              {isAllowed ? 
               (
                 // <button
                 //   onClick={openBroadcasting}

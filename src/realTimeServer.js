@@ -132,12 +132,13 @@ export default (httpServer) => {
 
             socket.on("approval-notification", ({ userId, roomId }) =>{
                 console.log("notificación de aprobación para unirse al stream",userId, roomId);
-                socket.broadcast.emit("approved", { userId, roomId });
+                // socket.broadcast.emit("approved", { userId, roomId });
+                io.to(`user:${userId}`).emit("approved", { userId, roomId });
             });
 
             socket.on("cancel-notification", ({ userId, roomId }) =>{
                 console.log("notificación de cancelacion para unirse al stream",userId, roomId);
-                socket.broadcast.emit("canceled", { userId, roomId });
+                socket.broadcast.emit("canceled",  userId );
             });
 
             socket.on("quorumCalculated", (quorumPercentage) => {
@@ -426,21 +427,28 @@ export default (httpServer) => {
         // 🔹 Producir (Enviar stream al SFU)
         socket.on("produce", async ({ transportId, kind, rtpParameters, roomId, role }, callback) => {
             const room = await getRoom(roomId);
-            // const peer = await getOnePeerInRoom(roomId, socket.id);
 
             const peer = getPeer(socket.roomId, socket.id);
 
-            if (!peer) {
-                throw new Error("Peer no encontrado");
-            }
+            if (!peer) throw new Error("Peer no encontrado");
 
             const transport = peer.transports.find(t => t.id === transportId);
 
             try {
+                
+                // 🔒 Cerrar cualquier producer previo del mismo rol (de OTRO peer) antes de aceptar el nuevo
+                for (const otherPeer of room.peers.values()) {
+                    if (otherPeer.id === peer.id) continue;
+                    if (otherPeer.role !== role) continue;
+
+                    const stale = otherPeer.producers.filter(p => p.kind === kind);
+                    for (const staleProducer of stale) {
+                        console.log(`♻️ Cerrando producer previo (${role}) del peer ${otherPeer.id}`);
+                        await staleProducer.close(); // dispara producer.on("close") -> notifica a todos
+                    }
+                }
+
                 const producer = await transport.produce({ kind, rtpParameters, appData: { peerId: socket.id, } });
-
-                // console.log("ANTES push:",peer.producers.length);
-
                 peer.producers.push(producer);
                 peer.role = role; // Guardar el rol del peer
                 // room.activeProducerId = socket.id;
@@ -471,7 +479,7 @@ export default (httpServer) => {
 
                     peer.producers = peer.producers.filter(p => p.id !== producer.id);
 
-                    socket.to(roomId).emit("producer-closed", { producerId: producer.id });
+                    // socket.to(roomId).emit("producer-closed", { producerId: producer.id });
                 // console.log("DESPUES DE CERRAR push:",peer.producers.length);
                 }
                 

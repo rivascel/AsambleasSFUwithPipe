@@ -174,6 +174,7 @@ const AttendeesList = () => {
         <>
           {hasPending && (
             <div className="mb-6">
+              <div className="h-48 overflow-y-auto">
               <h2 className="text-lg font-bold mb-2">Usuarios pendientes</h2>
               {pendingUsersIds.map((userId, index) => (
                 <div key={`pending-${userId}-${index}`} className="mb-2 p-2 border rounded">
@@ -186,23 +187,27 @@ const AttendeesList = () => {
                   </button>
                 </div>
               ))}
+              </div>
             </div>
           )}
           
           {hasApproved && (
             <div>
               <h2 className="text-lg font-bold mb-2">Usuarios aprobados</h2>
-              {approvedUsersIds.map((userId, index) => (
-                <div key={`approved-${userId}-${index}`} className="mb-2 p-2 border rounded">
-                  <p>{userId}</p>
-                  <button
-                    onClick={() => handleCancel(userId)}
-                    className="bg-red-500 text-red px-3 py-1 rounded hover:bg-red-600 mt-1"
-                  >
-                    Cancelar aprobación
-                  </button>
-                </div>
-              ))}
+              
+              
+                {approvedUsersIds.map((userId, index) => (
+                  <div key={`approved-${userId}-${index}`} className="mb-2 p-2 border rounded">
+                    <p>{userId}</p>
+                    <button
+                      onClick={() => handleCancel(userId)}
+                      className="bg-red-500 text-red px-3 py-1 rounded hover:bg-red-600 mt-1"
+                    >
+                      Cancelar aprobación
+                    </button>
+                  </div>
+                ))}
+              
             </div>
           )}
         </>

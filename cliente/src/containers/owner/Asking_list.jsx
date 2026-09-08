@@ -163,23 +163,26 @@ useEffect(() => {
         <>
           {hasPending && (
             <div className="mb-6">
-              <h2 className="text-lg font-bold mb-2">Usuarios pendientes</h2>
-              {pendingUsersIds.map((user, index) => (
+              <div className="h-48 overflow-y-auto">
+              
+                <h2 className="text-lg font-bold mb-2">Usuarios pendientes</h2>
+                {pendingUsersIds.map((user, index) => (
 
-                
-                <div key={`pending-${index}`} className="mb-2 p-2 border rounded">
-                  <p>
-                    
-                    {
-                    typeof user === 'object' && user !== null 
-                    ? 
-                    user.alias 
-                    : user
-                    }
-                  </p>
- 
-                </div>
-              ))}
+                  
+                  <div key={`pending-${index}`} className="mb-2 p-2 border rounded">
+                    <p>
+                      
+                      {
+                      typeof user === 'object' && user !== null 
+                      ? 
+                      user.alias 
+                      : user
+                      }
+                    </p>
+  
+                  </div>
+                ))}
+              </div>
             </div>
           )}
           

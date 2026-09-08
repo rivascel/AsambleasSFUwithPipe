@@ -151,3 +151,11 @@
 {"interior":"50","apartamento":"102","correo":"techprocess.sas@gmail.com","proposicion":"prop48","valor":1}
 {"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"prop48","valor":2}
 {"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"prop49","valor":1}
+{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"prop50.","valor":2}
+{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"prop51","valor":1}
+{"interior":"50","apartamento":"102","correo":"techprocess.sas@gmail.com","proposicion":"prop52","valor":0}
+{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"prop52","valor":0}
+{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"prop53","valor":1}
+{"interior":"50","apartamento":"102","correo":"techprocess.sas@gmail.com","proposicion":"prop53","valor":0}
+{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"prop53","valor":1}
+{"interior":"50","apartamento":"102","correo":"techprocess.sas@gmail.com","proposicion":"prop53","valor":2}

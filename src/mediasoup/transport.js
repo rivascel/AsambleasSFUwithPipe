@@ -27,6 +27,7 @@ export async function createWebRtcTransport(router) {
     );
   });
 
+
   transport.on("iceselectedtuplechange", (tuple) => {
     console.log(
       "🎯 ICE SELECTED TUPLE:",
