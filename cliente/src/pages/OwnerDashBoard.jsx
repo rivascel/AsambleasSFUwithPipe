@@ -11,7 +11,7 @@ import Questions from '../containers/owner/Questions';
 import { UserContext } from "../components/UserContext";
 import AppContext from '../context/AppContext';
 import { getSocket  } from "../hooks/socket";
-import { useLogoutOnClose } from '../hooks/useLogoutOnClose';
+// import { useLogoutOnClose } from '../hooks/useLogoutOnClose';
 
 import API_URL from '../config/api';
 
@@ -33,7 +33,7 @@ const Section = ({ title, children }) => (
 );
 
 const DashBoardOwner = () => {
-   useLogoutOnClose();
+  //  useLogoutOnClose();
   // const { apiUrl } = useContext(AppContext);
 
   // const { apiUrl } = axios.get(`${API_URL}/api/request-magic-link`);

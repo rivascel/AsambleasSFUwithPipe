@@ -8,33 +8,33 @@ export async function createWebRtcTransport(router) {
     listenInfos: configuration.mediasoup.webRtcTransport.listenInfos,
   });
 
-  console.log("🚀 Transport creado:", transport.id);
+  // console.log("🚀 Transport creado:", transport.id);
 
   
-  transport.on("icestatechange", (iceState) => {
-    console.log(
-      "🧊 ICE STATE:",
-      transport.id,
-      iceState
-    );
-  });
+  // transport.on("icestatechange", (iceState) => {
+  //   // console.log(
+  //   //   "🧊 ICE STATE:",
+  //   //   transport.id,
+  //   //   iceState
+  //   // );
+  // });
 
-  transport.on("dtlsstatechange", (dtlsState) => {
-    console.log(
-      "🔐 DTLS STATE:",
-      transport.id,
-      dtlsState
-    );
-  });
+  // transport.on("dtlsstatechange", (dtlsState) => {
+  //   // console.log(
+  //   //   "🔐 DTLS STATE:",
+  //   //   transport.id,
+  //   //   dtlsState
+  //   // );
+  // });
 
 
-  transport.on("iceselectedtuplechange", (tuple) => {
-    console.log(
-      "🎯 ICE SELECTED TUPLE:",
-      transport.id,
-      tuple
-    );
-  });
+  // transport.on("iceselectedtuplechange", (tuple) => {
+  //   // console.log(
+  //   //   "🎯 ICE SELECTED TUPLE:",
+  //   //   transport.id,
+  //   //   tuple
+  //   // );
+  // });
 
 
   return transport;

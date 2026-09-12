@@ -282,7 +282,7 @@ router.get('/magic-link', (req, res) => {
 
   const {   token } = req.query;
 
-  console.log("🔗 Magic Link accessed with token:", token);
+//   console.log("🔗 Magic Link accessed with token:", token);
   if (!token ) {
     return res.status(400).json({ message: 'Token es requerido' });
   }

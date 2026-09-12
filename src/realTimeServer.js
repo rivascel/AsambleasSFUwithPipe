@@ -117,12 +117,12 @@ export default (httpServer) => {
 
             //============== ENVIA SOLICITUD PARA UNIRSE AL STREAM
             socket.on("admin-ready", () =>{
-                console.log("transmisión del admin");
+                // console.log("transmisión del admin");
                 socket.broadcast.emit("stream-ready");
             });
 
             socket.on("user-ready", (userId, roomId) =>{
-                console.log("transmisión del user",userId, roomId);
+                // console.log("transmisión del user",userId, roomId);
                 socket.broadcast.emit("stream-ready-user",userId, roomId);
             });
 
@@ -134,11 +134,14 @@ export default (httpServer) => {
                 console.log("notificación de aprobación para unirse al stream",userId, roomId);
                 // socket.broadcast.emit("approved", { userId, roomId });
                 io.to(`user:${userId}`).emit("approved", { userId, roomId });
+                console.log("notificación enviada a:", userId);
             });
 
             socket.on("cancel-notification", ({ userId, roomId }) =>{
                 console.log("notificación de cancelacion para unirse al stream",userId, roomId);
-                socket.broadcast.emit("canceled",  userId );
+                // socket.broadcast.emit("canceled",  userId );
+                io.to(`user:${userId}`).emit("canceled", { userId, roomId });
+                console.log("notificación cancelacion enviada a:", userId);
             });
 
             socket.on("quorumCalculated", (quorumPercentage) => {
@@ -200,7 +203,7 @@ export default (httpServer) => {
                 io.emit('start-cronometer', { 
                     time 
                 });
-                console.log("cronometro iniciado", time);
+                // console.log("cronometro iniciado", time);
             });
 
             // Escuchar las actualizaciones del cronómetro
@@ -226,7 +229,7 @@ export default (httpServer) => {
             });
 
             socket.on("disconnect", () => {
-                console.log("🔴 Usuario desconectado:", socket.id);
+                // console.log("🔴 Usuario desconectado:", socket.id);
             });
             
         };
@@ -245,7 +248,7 @@ export default (httpServer) => {
             let room = getRoom(roomId); //busca en router.js
             if (!room) {
                 room = await createRoom(roomId); // lo crea usando router.js
-                console.log("🏠 Sala creada:", roomId);
+                // console.log("🏠 Sala creada:", roomId);
             }
 
             const isBroadcaster = email === ADMIN_EMAIL;
@@ -274,7 +277,7 @@ export default (httpServer) => {
             userSocketMap.set(email, socket.id);
 
 
-            console.log(`✅ Peer ${socket.id} asignado al router ${assignedRouterId}`);
+            // console.log(`✅ Peer ${socket.id} asignado al router ${assignedRouterId}`);
 
             // Enviar a todos los demás usuarios que un nuevo usuario se unió y su router
             socket.to(roomId).emit("peer-joined", {
@@ -310,7 +313,7 @@ export default (httpServer) => {
             // ✅ Verificar que el peer se guardó correctamente
             const savedPeer = getPeer(roomId, socket.id); 
 
-            console.log("✅ Peer guardado:", socket.id, savedPeer?.roomId);
+            // console.log("✅ Peer guardado:", socket.id, savedPeer?.roomId);
 
             // Consultar router de un usuario
             socket.on("get-user-router", ({ userId }, callback) => {
@@ -332,7 +335,7 @@ export default (httpServer) => {
                     userSocketMap.delete(userId);
                     
                     socket.to(roomId).emit("user-left", { userId });
-                    console.log(`👋 Usuario ${userId} desconectado, router eliminado`);
+                    // console.log(`👋 Usuario ${userId} desconectado, router eliminado`);
                 }
             });
             
@@ -351,7 +354,7 @@ export default (httpServer) => {
             const room = await getRoom(roomId);
 
             if (!room) {
-                console.error("❌ Sala no existe");
+                // console.error("❌ Sala no existe");
                 return callback({ error: "Sala no existe" });
             }
 
@@ -381,7 +384,7 @@ export default (httpServer) => {
                     peer.transports = peer.transports.filter(t => t.id !== transport.id);
                 });
 
-                console.log(`🚀 Transport ${transport.id}`);
+                // console.log(`🚀 Transport ${transport.id}`);
 
                 callback({
                     id: transport.id,
@@ -410,7 +413,7 @@ export default (httpServer) => {
     
                 await transport.connect({ dtlsParameters });
     
-                console.log(`✅ Transport conectado ${transport.id}`);
+                // console.log(`✅ Transport conectado ${transport.id}`);
     
                 callback({ connected: true });
     
@@ -459,7 +462,7 @@ export default (httpServer) => {
                 // REGISTRO GLOBAL
                 registerProducer({ producer, roomId: socket.roomId, peerId: socket.id, routerId: peer.routerId, 
                                     workerId: peer.workerId, role: peer.role });
-                console.log("🎥 Producer creado y rol:", producer.id, role);
+                // console.log("🎥 Producer creado y rol:", producer.id, role);
 
                 callback({ id: producer.id });
 
@@ -472,7 +475,7 @@ export default (httpServer) => {
                     role: role
                 });
 
-                console.log("📢 Emitiendo a:", peer.roomId, role, producer.id);
+                // console.log("📢 Emitiendo a:", peer.roomId, role, producer.id);
 
                 producer.on("close", () => {
                     room.activeProducerId = null;
@@ -501,7 +504,7 @@ export default (httpServer) => {
         });
         // const globalProducers = [];
         socket.on("stopProducer", async ( { roomId, producerId }  ) => {
-            console.log("roomId recibido:", roomId, typeof roomId);
+            // console.log("roomId recibido:", roomId, typeof roomId);
             // console.log("🛑 stopProducer recibido", { producerId });
             // const room = await getRoom(roomId);
 
@@ -540,7 +543,7 @@ export default (httpServer) => {
 
         // 🔹 Obtener productores existentes (para usuarios que entran tarde)
         socket.on("getProducers", (data, callback) => {
-              console.log("📥 getProducers recibido", data);
+            //   console.log("📥 getProducers recibido", data);
             const { roomId } = data; //extraemos roomId del objeto data
 
             try {
@@ -549,9 +552,9 @@ export default (httpServer) => {
 
             const producers = Array.from(room.peers.values())
                 .flatMap(peer => {
-                    console.log("👤 Peer:", peer.id,
-                    "role:", peer.role,
-                    "producers:", peer.producers.length);
+                    // console.log("👤 Peer:", peer.id,
+                    // "role:", peer.role,
+                    // "producers:", peer.producers.length);
 
                     return peer.producers.map(producer => ({
                         producerId: producer.id,
@@ -601,7 +604,7 @@ export default (httpServer) => {
 
                 consumerPeer.consumers.push(consumer);
 
-                console.log("📺 Consumer creado:", consumer.id);
+                // console.log("📺 Consumer creado:", consumer.id);
           
 
                 callback({ 
@@ -639,10 +642,10 @@ export default (httpServer) => {
 
                 if (!peer) { throw new Error("Peer no encontrado" );}
 
-                console.log("▶️ Resume solicitado:", consumerId);
+                // console.log("▶️ Resume solicitado:", consumerId);
                 // const peer = getOnePeerInRoom(socket.roomId, socket.id);
 
-                console.log("👤 Peer:", !!peer);
+                // console.log("👤 Peer:", !!peer);
                 const consumer = peer?.consumers.find(c => c.id === consumerId);
 
                 if (!consumer  ) {
@@ -660,18 +663,18 @@ export default (httpServer) => {
                 await consumer.resume();
                 }
 
-                console.log("✅ consumer resumido:", consumerId);
+                // console.log("✅ consumer resumido:", consumerId);
             
-                console.log("📺 Consumer encontrado:", !!consumer);
-                console.log("Tipo consumers:", peer.consumers.constructor.name);
+                // console.log("📺 Consumer encontrado:", !!consumer);
+                // console.log("Tipo consumers:", peer.consumers.constructor.name);
 
                 try {
-                            console.log("consumer state:", {
-                            id: consumer.id,
-                            closed: consumer.closed,
-                            producerId: consumer.producerId,
-                            paused: consumer.paused
-                            });
+                            // console.log("consumer state:", {
+                            // id: consumer.id,
+                            // closed: consumer.closed,
+                            // producerId: consumer.producerId,
+                            // paused: consumer.paused
+                            // });
 
 
                      await consumer.resume();

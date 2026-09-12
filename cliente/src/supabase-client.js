@@ -233,7 +233,6 @@ export const listenToRequests = (room, options={}, onChange) => {
   
   // Para el admin, crear canal único
   const channelName = `admin-${room}-${componentId} -${Date.now()}`;
-  // console.log(`🔔 [ADMIN] Usando listenToRequests: ${channelName}`);
   
   const channel = supabase
     .channel(channelName)
@@ -246,8 +245,19 @@ export const listenToRequests = (room, options={}, onChange) => {
         filter: `room_id=eq.${room}`
       },
       (payload) => {
-        console.log(`🎯 [ADMIN-via-deprecated] Evento ${payload.eventType}`);
-        onChange?.(payload.new || payload.old);
+        
+        if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
+          onChange({
+            eventType: payload.eventType,
+            ...payload.new,
+          });
+        } else if (payload.eventType === 'DELETE') {
+          onChange({
+            eventType: 'DELETE',
+            user_id: payload.old.user_id,
+            status: null
+          });
+        }
       }
     )
     .subscribe();

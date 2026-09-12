@@ -85,80 +85,104 @@ const VideoGeneral = () => {
     
     const fetchData = async () => {
       try {
-        const approvedUsersById = await getApprovedUserById(roomId, email);
+        // const approvedUsersById = await getApprovedUserById(roomId, email);
 
         // const userData = await response.json();
-        const userById = approvedUsersById || [];
+        // const userById = approvedUsersById || [];
 
+        // const handleApproved = (data) => {
+        //   if (data.userId !== email) return;
+
+        //   console.log("Este usuario ha sido aprobado:", data.userId);
+        //   setViewerReady(true);
+        //   setStream(true);
+        // };
+
+        // const handleCanceled = (data) => {
+        //   if (data.userId !== email) return;
+
+        //   console.log("Este usuario ha sido cancelado:", data.userId);
+        //   setViewerReady(false);
+        //   setStream(false);
+
+        //   stopProducing();
+        // };
+
+        // socketRef.current.on("approved", handleApproved);
+        // socketRef.current.on("canceled", handleCanceled);
         
-        socketRef.current.on("approved", (data) => { 
-          // ✅ Verificar que el userId del evento coincida con el email actual
-          if (data.userId !== email) {
-            console.log("Este evento no es para este usuario");
-            return; // No hacer nada si no es para este usuario
-          }
+        // socketRef.current.on("approved", (data) => { 
+        //   // ✅ Verificar que el userId del evento coincida con el email actual
+        //   if (data.userId !== email) {
+        //     console.log("Este evento no es para este usuario");
+        //     return; // No hacer nada si no es para este usuario
+        //   }
 
-          console.log("Este usuario ha sido aprobado:", data.userId);
+        //   console.log("Este usuario ha sido aprobado:", data.userId);
 
-          if (!viewerReady) { 
-            setViewerReady(true);
-            setStream(true);
-          }
-        });
+        //   if (!viewerReady) { 
+        //     setViewerReady(true);
+        //     setStream(true);
+        //   }
+        // });
 
-            // if (userById.includes(email)) {
-            //   console.log("Usuario aprobado para enviar stream...");
-            //   if (!viewerReady) {
-            //     setViewerReady(true);
-            //     setStream(true);
-            //   }
-            // } else {
-            //   console.log("Usuario aun no aprobado");
-            // };
+        // socketRef.current.on("canceled", (data) => { 
+        //   // ✅ Verificar que el userId del evento coincida con el email actual
+        //   if (data.userId !== email) {
+        //     console.log("Este evento no es para este usuario");
+        //     return; // No hacer nada si no es para este usuario
+        //   }
 
-            // });
+        //   console.log("Este usuario ha sido cancelado:", data.userId);
+
+        //   if (viewerReady) { 
+        //     setViewerReady(false);
+        //     setStream(false);
+        //     stopProducing()
+        //   }
+        // });
+
+        //  if (userById.includes(email)) {
+        //    console.log("Usuario aprobado para enviar stream...");
+        //      if (viewerReady) {
+        //        setViewerReady(true);
+        //        setStream(false);
+        //      }
+        //    } else {
+        //      console.log("Usuario aun no aprobado");
+        //    };
+
 
         unsuscribeChannel  = listenToRequests(roomId, {componentId: 'VideoOwner'}, (approver) => {
           
-          if (approver.status === 'approved') {
+          if (approver.status === 'approved' && approver.user_id === email) {
             console.log("Viewer aprobado via listener:", approver.user_id);
 
-            if (approver.user_id === email) {
+            // if (approver.user_id === email) {
               if (!viewerReady) {
                 setViewerReady(true);
                 setStream(true);
-              }
-            }
-
-
-              // if (approver.status === null || approver.status === undefined) {
-              // console.log("Viewer aprobado via listener:", approver.user_id);
-              // if (viewerReady) {
-              //   setViewerReady(false);
-              //   setStream(false);
               // }
-              // if (userById.includes(email)) {
-              //   console.log("Usuario aprobado para enviar stream...");
-              //   if (viewerReady) {
-              //     setViewerReady(true);
-              //     setStream(false);
-              //   }
-              // } else {
-              //   console.log("Usuario aun no aprobado");
-              // };
-
+            }
           }
-          });
 
-          // if (userById.includes(email)) {
-          //   console.log("Usuario aprobado para enviar stream...");
-          //   if (!viewerReady) {
-          //     setViewerReady(true);
-          //     setStream(false);
-          //   }
-          // } else {
-          //   console.log("Usuario aun no aprobado");
-          // };
+          const isDeleted = approver.eventType === 'DELETE' || !approver.status;
+
+          if (isDeleted && approver.user_id === email) {
+            console.log("Viewer cancelado/eliminado via listener:", approver.user_id);
+            
+            // Apagamos transmisión sin importar el estado previo
+            setViewerReady(false);
+            setStream(false);
+            
+            if (typeof stopProducing === "function") {
+              stopProducing();
+            }
+          }
+
+
+        });
+
 
       } catch (error) {
         console.error("Error fetching user", error);
@@ -167,9 +191,12 @@ const VideoGeneral = () => {
     fetchData();
     return () => {
       if (unsuscribeChannel) unsuscribeChannel.removeChannel();
+      socketRef.current.off("approved");
+      socketRef.current.off("canceled");
     }
     
-  },[/*checkApprove, roomId, email, ownerInfo*/]);
+  },[email, roomId, ownerInfo?.email /*checkApprove, */]);
+
   
   // 1. Estado central (useRef + estado lógico)
   const setState = (newState) => {

@@ -57,7 +57,7 @@ export async function createRoom(roomId) {
 
   rooms.set(roomId, room);
 
-  console.log(`📡 Room ${roomId} creada -> Producer Router ${producerRouter.id}`);
+  // console.log(`📡 Room ${roomId} creada -> Producer Router ${producerRouter.id}`);
 
   return room;
 }
@@ -94,7 +94,7 @@ export async function getOrCreateConsumerRouter(roomId, workerWrapper) {
     router
   );
 
-  console.log(`🧩 Consumer Router creado en Worker ${workerWrapper.id}`);
+  // console.log(`🧩 Consumer Router creado en Worker ${workerWrapper.id}`);
 
   return router;
 }
@@ -171,7 +171,7 @@ export async function addPeerToRoom(roomId,  socketId,  isBroadcaster = false) {
 
   room.peers.set(socketId, peer);
 
-  console.log(`👤 Peer ${socketId} -> Worker ${workerId}`);
+  // console.log(`👤 Peer ${socketId} -> Worker ${workerId}`);
 
   return router;
 }
@@ -192,7 +192,7 @@ export function registerProducer({ producer,  roomId,  peerId,  routerId,  worke
 
   globalProducers.set(producer.id, { producer, roomId, peerId, routerId, workerId, role });
 
-  console.log(`🎥 Producer registrado ${producer.id}`);
+  // console.log(`🎥 Producer registrado ${producer.id}`);
 }
 
 export function getProducerInfo(producerId) {
@@ -231,7 +231,7 @@ export async function pipeProducerToRouter({ producerId, targetRouter }) {
     };
   }
 
-  console.log(`🔗 Pipe ${producerId} -> ${targetRouter.id}`);
+  // console.log(`🔗 Pipe ${producerId} -> ${targetRouter.id}`);
 
   // CASO 2:
   // routers diferentes
@@ -275,7 +275,7 @@ export function removePeerFromRoom(roomId, socketId) {
 
   peer.consumers.forEach(c => c.close());
   room.peers.delete(socketId);
-  console.log(`👋 Peer ${socketId} eliminado`);
+  // console.log(`👋 Peer ${socketId} eliminado`);
 }
 
 export function removePeerFromProducers(roomId, socketId) {
@@ -293,7 +293,7 @@ export function removePeerFromProducers(roomId, socketId) {
 
   peer.producers.delete(socketId);
 
-  console.log(`👋 Peer ${socketId} eliminado de producers`);
+  // console.log(`👋 Peer ${socketId} eliminado de producers`);
 }
 
 /* =========================================================

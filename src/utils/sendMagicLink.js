@@ -86,7 +86,7 @@ export default async function sendMagicLink( email, role, token,) {
           <p>Este enlace expira en 15 minutos.</p>
         `,
       });
-      console.log('Correo enviado:', data);
+      // console.log('Correo enviado:', data);
       
       return { success: true };
     } catch (error) {
