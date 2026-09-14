@@ -11,8 +11,7 @@ import useVisibility from "../../hooks/useVisibility";
 import { useRoomState } from "../../hooks/useRoomState";
 import Title from "../../components/components/Title";
 import API_URL from '../../config/api';
-
-// import {image} from "../../assets/img/sin_senal";
+// import { useWebRTCSupport } from '../../hooks/useWebRTCSupport';
 
 const apiUrl = API_URL;
 
@@ -84,75 +83,8 @@ const VideoGeneral = () => {
     }
     
     const fetchData = async () => {
-      try {
-        // const approvedUsersById = await getApprovedUserById(roomId, email);
 
-        // const userData = await response.json();
-        // const userById = approvedUsersById || [];
-
-        // const handleApproved = (data) => {
-        //   if (data.userId !== email) return;
-
-        //   console.log("Este usuario ha sido aprobado:", data.userId);
-        //   setViewerReady(true);
-        //   setStream(true);
-        // };
-
-        // const handleCanceled = (data) => {
-        //   if (data.userId !== email) return;
-
-        //   console.log("Este usuario ha sido cancelado:", data.userId);
-        //   setViewerReady(false);
-        //   setStream(false);
-
-        //   stopProducing();
-        // };
-
-        // socketRef.current.on("approved", handleApproved);
-        // socketRef.current.on("canceled", handleCanceled);
-        
-        // socketRef.current.on("approved", (data) => { 
-        //   // ✅ Verificar que el userId del evento coincida con el email actual
-        //   if (data.userId !== email) {
-        //     console.log("Este evento no es para este usuario");
-        //     return; // No hacer nada si no es para este usuario
-        //   }
-
-        //   console.log("Este usuario ha sido aprobado:", data.userId);
-
-        //   if (!viewerReady) { 
-        //     setViewerReady(true);
-        //     setStream(true);
-        //   }
-        // });
-
-        // socketRef.current.on("canceled", (data) => { 
-        //   // ✅ Verificar que el userId del evento coincida con el email actual
-        //   if (data.userId !== email) {
-        //     console.log("Este evento no es para este usuario");
-        //     return; // No hacer nada si no es para este usuario
-        //   }
-
-        //   console.log("Este usuario ha sido cancelado:", data.userId);
-
-        //   if (viewerReady) { 
-        //     setViewerReady(false);
-        //     setStream(false);
-        //     stopProducing()
-        //   }
-        // });
-
-        //  if (userById.includes(email)) {
-        //    console.log("Usuario aprobado para enviar stream...");
-        //      if (viewerReady) {
-        //        setViewerReady(true);
-        //        setStream(false);
-        //      }
-        //    } else {
-        //      console.log("Usuario aun no aprobado");
-        //    };
-
-
+    try {
         unsuscribeChannel  = listenToRequests(roomId, {componentId: 'VideoOwner'}, (approver) => {
           
           if (approver.status === 'approved' && approver.user_id === email) {
@@ -162,6 +94,7 @@ const VideoGeneral = () => {
               if (!viewerReady) {
                 setViewerReady(true);
                 setStream(true);
+                setIsAllowed(true);
               // }
             }
           }
@@ -217,11 +150,12 @@ const VideoGeneral = () => {
       return;
     }
     setIsLiveOwner(true);
-    setIsAllowed(true);
+    // setIsAllowed(true);
     await createSendTransport();
     await produce();
   }
 
+  //elimina productores y consumers cuando se cierra la transmisión
   useEffect(() => {
 
     const handler = ( producerId ) => {
@@ -443,8 +377,14 @@ const VideoGeneral = () => {
       return;
     }
     const stream = await navigator.mediaDevices.getUserMedia({
-      video: true,
+    
       audio: true,
+        video: true
+        // {
+        //   width: { ideal: 640, max: 1280 },   // Permite escalar hacia abajo (480p)
+        //   height: { ideal: 480, max: 720 },
+        //   frameRate: { max: 24 }              // Bajar a 20-24 fps reduce drásticamente el uso de CPU
+        // }
     });
     localRef.current.srcObject = stream;
 
@@ -774,7 +714,7 @@ const VideoGeneral = () => {
 
   if (stream) {
       console.log("activando flujo de productor");
-      startProducing();
+      // startProducing(); //no se va a activar automaticamente, se activa con el boton de iniciar llamada
     } else {
       console.log("Desactivando flujo de productor");
       stopProducing();
@@ -816,7 +756,10 @@ const VideoGeneral = () => {
       try {
         // 1. Obtener stream local
         // setIsAllowed(true);
-        setIsBroadcasting(true);
+
+        // setIsBroadcasting(true);
+        startProducing();
+        setStream(true);
 
       } catch (error) {
         console.error("Error al iniciar llamada:", error);
@@ -850,7 +793,7 @@ const VideoGeneral = () => {
                   ref={remoteRef} 
                   autoPlay 
                   playsInline 
-                  muted 
+                  // muted 
                   style={{ width: '100%', height: '80%', objectFit: 'cover', display: isLive ? 'block' : 'none' }}
               />
           </div>
@@ -864,7 +807,7 @@ const VideoGeneral = () => {
                   ref={remoteRefTemp} 
                   autoPlay 
                   playsInline 
-                  muted 
+                  // muted 
                   style={{ width: '100%', height: '100%', objectFit: 'cover', display: isLiveAttended ? 'block' : 'none' }}
               />
           </div>
@@ -881,27 +824,35 @@ const VideoGeneral = () => {
             <div className="controls">
               {isAllowed ? 
               (
-                // <button
-                //   onClick={openBroadcasting}
-                //   className="bg-blue-600 text-blue px-6 py-2 rounded hover:bg-blue-700 disabled:bg-gray-400"
-                // >
-                //   Iniciar llamada
-                // </button> 
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    onClick={openBroadcasting}
+                    className="bg-blue-600 text-blue px-6 py-2 rounded hover:bg-blue-700 disabled:bg-gray-400"
+                  >
+                    Iniciar llamada
+                  </button> 
+                  
+                  <button
+                    onClick={hangUpBroadcasting}
+                    className="bg-red-600 text-blue px-6 py-2 rounded hover:bg-red-700 disabled:bg-gray-400"
+                  >
+                    Detener llamada
+                  </button> 
+                
+                </div>
+
+                ):(
+                  <>
                 <button
                   onClick={hangUpBroadcasting}
                   className="bg-red-600 text-blue px-6 py-2 rounded hover:bg-red-700 disabled:bg-gray-400"
                 >
                   Detener llamada
-                </button> 
-                ):(
-                // <button
-                //   onClick={hangUpBroadcasting}
-                //   className="bg-red-600 text-blue px-6 py-2 rounded hover:bg-red-700 disabled:bg-gray-400"
-                // >
-                //   Detener llamada
-                // </button>
+                </button>
                 <p>Transmitiendo...</p>  
+                </>
                 )
+                
               }
             </div>
           </>
@@ -913,7 +864,6 @@ const VideoGeneral = () => {
 
       </div>
     </div>
-    )
-};
-
+  )
+}
 export default VideoGeneral;

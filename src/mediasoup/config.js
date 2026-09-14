@@ -15,7 +15,7 @@ function getLocalIp() {
   return '127.0.0.1';
 }
 
-console.log(`📡 Mediasoup en: ${config.ip || "0.0.0.0"} | Anunciando IP a los clientes: ${config.announcedIp}`);
+// console.log(`📡 Mediasoup en: ${config.ip || "0.0.0.0"} | Anunciando IP a los clientes: ${config.announcedIp}`);
 
 
 export const configuration = {
@@ -36,6 +36,11 @@ export const configuration = {
           parameters: {
             "x-google-start-bitrate": 1000,
           },
+        },
+        {
+          kind: 'video',
+          mimeType: 'video/VP8', // VP8 consume menos recursos de hardware en celulares antiguos
+          clockRate: 90000,
         },
         {
           kind: "video",
