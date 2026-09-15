@@ -286,7 +286,7 @@ const VideoGeneral = () => {
 
           const transport = deviceRef.current.createSendTransport(params);
 
-          sendTransportRef.current = transport;
+          // sendTransportRef.current = transport;
 
           transport.on("connect", ({ dtlsParameters }, callback, errback) => {
              console.log("🔌 SendTransport conectando...");
@@ -376,6 +376,19 @@ const VideoGeneral = () => {
       // Mostrar mensaje al usuario explicando que necesita HTTPS o cambiar de navegador
       return;
     }
+
+    // Selección de códec de video (calculada aquí, no en el cuerpo del componente)
+    // const isLowEndDevice = /Moto E6|Android 9|Android 8/i.test(navigator.userAgent);
+    // const preferredMime = isLowEndDevice ? 'video/vp8' : 'video/h264';
+
+    // const videoCodec = device.rtpCapabilities.codecs.find(
+    //   (c) => c.kind === 'video' && c.mimeType.toLowerCase() === preferredMime
+    // );
+
+    // if (!videoCodec) {
+    //   console.warn(`⚠️ Códec ${preferredMime} no disponible, usando el que decida el navegador`);
+    // }
+
     const stream = await navigator.mediaDevices.getUserMedia({
     
       audio: true,
@@ -393,7 +406,8 @@ const VideoGeneral = () => {
 
       const producer = await sendTransportRef.current.produce({ 
         track,
-        ...(isVideo && {
+        ...(isVideo && /*videoCodec &&*/ {
+          // codec: videoCodec,
           encodings,
           codecOptions: {
             videoGoogleStartBitrate: 1000,

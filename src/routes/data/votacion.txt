@@ -159,3 +159,5 @@
 {"interior":"50","apartamento":"102","correo":"techprocess.sas@gmail.com","proposicion":"prop53","valor":0}
 {"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"prop53","valor":1}
 {"interior":"50","apartamento":"102","correo":"techprocess.sas@gmail.com","proposicion":"prop53","valor":2}
+{"interior":"65","apartamento":"502","correo":"rivascel@hotmail.com","proposicion":"prop54","valor":1}
+{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"prop54","valor":2}
