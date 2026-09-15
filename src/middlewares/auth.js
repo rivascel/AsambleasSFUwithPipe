@@ -49,7 +49,7 @@ export default function requireAuth(req, res, next) {
             // 2. FALLBACK: Si no hay session, mirar si existe la cookie 'username' (Caso Admin local)
             if (!userRole && req.cookies.username) {
                 userRole = req.cookies.username; // Si la cookie es username=administrador
-                userEmail = "admin@local.com";   // Email genérico para admin local
+                // userEmail = "admin@local.com";   // Email genérico para admin local
             }
 
             const token = req.cookies.token;
@@ -57,7 +57,7 @@ export default function requireAuth(req, res, next) {
             // CASO ADMINISTRADOR
             if (userRole === 'administrador' || req.cookies.username === 'administrador') {
                 req.user = { 
-                    email: userEmail || req.cookies.username || "admin@sistema.com", 
+                    email: /*userEmail ||*/ req.cookies.username /*|| "admin@sistema.com"*/, 
                     role: 'administrador' 
                 };
                 return next(); // <--- Termina aquí y va al endpoint

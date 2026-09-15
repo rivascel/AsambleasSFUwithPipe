@@ -255,6 +255,38 @@ router.post('/request-magic-link', async (req, res) => {
     }
 });
 
+
+router.post('/login-admin', (req, res) => {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+        return res.status(400).json({ message: "Email y contraseña requeridos" });
+    }
+
+    // Comparación simple contra variables de entorno
+    if (email !== process.env.ADMIN_EMAIL || password !== process.env.ADMIN_PASSWORD) {
+        return res.status(401).json({ message: "Credenciales inválidas" });
+    }
+
+    // Crear cookie de sesión (JSON)
+    const sessionData = {
+        email: process.env.ADMIN_EMAIL,
+        role: 'administrador'
+    };
+
+    res.cookie('session', JSON.stringify(sessionData), {
+        httpOnly: false,
+        sameSite: 'None',
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 1000 * 60 * 60 * 8 // 8 horas
+    });
+
+    return res.json({ ok: true, message: "Login exitoso" });
+});
+
+
+
+
 router.get('/owner-data', requireAuth, (req, res) => {
     // Este endpoint solo devuelve datos si la cookie está presente
     // const session = JSON.parse(req.cookies.session);
@@ -270,9 +302,11 @@ router.get('/owner-data', requireAuth, (req, res) => {
 router.get('/admin-data', requireAuth, (req, res) => {
     // Este endpoint solo devuelve datos si la cookie está presente
     const email = req.user ? req.user.email : "administrador no encontrado";
+    const password = process.env.ADMIN_PASSWORD; // Valor por defecto si no está en .env
    res.json({ 
         user: "administrador", 
         email: email,
+        password: password,
         dashboardData: "Datos privados" 
     });
 });
@@ -348,7 +382,7 @@ router.get('/magic-link', (req, res) => {
         role: userData.role, 
         email: userData.email 
     }), { ...cookieOptions, 
-        httpOnly: false,
+        // httpOnly: false,
         //   secure: false,
         //     sameSite: 'Lax'
     

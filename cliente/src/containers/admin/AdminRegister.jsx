@@ -10,6 +10,8 @@ const RegisterAdmin = ({ onRegister }) => {
     const [adminId, setAdminId] = useState("");
     const [message, setMessage] = useState("");
     const { login } = useContext(UserContext);
+    const { password, setPassword } = useState(""); // Estado para la contraseña
+    const { error, setError } = useState(""); // Estado para el error
     const navigate = useNavigate();
 
     // useEffect(() => {
@@ -40,6 +42,30 @@ const RegisterAdmin = ({ onRegister }) => {
         console.error(error);
         setMessage("Hubo un error al enviar el enlace.");
       }
+        
+        setError("");
+        try {
+            const res = await fetch("/api/login-admin", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include", 
+                body: JSON.stringify({ email, password })
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                setError(data.message || "Error al iniciar sesión");
+                return;
+            }
+
+            // Login exitoso → redirigir o cargar datos
+            login(email);
+             navigate("/admin/dashboard"); // ✅ sin recargar la página
+            // window.location.href = "/admin/dashboard";
+        } catch (err) {
+            setError("Error de red");
+        }
     };
 
     return (
@@ -64,7 +90,8 @@ const RegisterAdmin = ({ onRegister }) => {
                     
                     {/* <form onSubmit={handleSendLink}> */}
                         <input type="email" id="username" value={email} onChange={(e) => setEmail(e.target.value)} />
-                    
+                    <h1 className="text-lg font-semibold mb-4">Contraseña</h1>    
+                        <input type="password" id="password" value={password}  />
                         <Button type="Button" className="w-full mt-4" onClick={handleSendLink}>
                             Registrar Ahora
                         </Button>

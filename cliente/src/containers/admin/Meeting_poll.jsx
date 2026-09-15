@@ -113,9 +113,9 @@ const PollingManage = () => {
                             }
                         }
                     
-                        if (!found) {
-                            console.log(`No se encontró el correo: ${votesData[i].correo}`);
-                        }
+                        // if (!found) {
+                        //     console.log(`No se encontró el correo: ${votesData[i].correo}`);
+                        // }
                     }
             
                     const filteredVotes = votesData.filter(vote => decisionText === vote.proposicion.trim());
