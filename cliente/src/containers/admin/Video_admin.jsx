@@ -148,10 +148,10 @@ const VideoGeneral = () => {
         //   setIsLiveOwner(false);
         // }
 
-        if (producerData.role === "owner") setIsLive(false);
-        else {
-          setIsLiveOwner(false);
-        }
+        if (producerData.role === "owner") setIsLiveOwner(false);
+        // else {
+        //   setIsLiveOwner(false);
+        // }
       };
   
       if (socketRef.current) {

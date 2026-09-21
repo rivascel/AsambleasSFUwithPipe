@@ -24,7 +24,7 @@ const Questions = () => {
     // });
   },[]);
 
-  const [selected, setSelected] = useState(null);
+  const [selected, setSelected] = useState(false);
   const [decisionText, setDecisionText] = useState("");
   const { email, ownerData } = useContext(UserContext);
   const [voting, setVoting] = useState(false); // Cambia a true cuando debas habilitar la votación
@@ -32,10 +32,12 @@ const Questions = () => {
 
   useEffect(() => {
       socketRef.current.on('receive-decision', text => {
+        setSelected(false); // Reinicia el estado de selección
         setDecisionText(text);
       });
 
       socketRef.current.on("inicioVotacion", text=>{
+        setSelected(true);
         setVoting(text);
       });
       // Limpieza para evitar múltiples listeners
@@ -49,7 +51,14 @@ const Questions = () => {
   const handleVoteChange = async (e, decision) => {
     // if (!votingEnabled) return;
     const value = e.target.value;
+    
+
+
     setVoting(false); //deshabilita la votacion
+
+        setTimeout(()=>{
+          setSelected(false);
+        }, 5000)
     
     //solo pueden votar los que tienen participacion, es decir, son propietarios
     // if (ownerData.participacion !== 0) {
@@ -61,7 +70,7 @@ const Questions = () => {
         valor: parseInt(value),
       };
     // }
-    setSelected(null); //despues de registrar el voto, select pasa a null
+    // setSelected(null); //despues de registrar el voto, select pasa a null
 
     await axios.post(`${apiUrl}/api/votacion`, nuevoVoto, { withCredentials: true })
       .then(response => {
@@ -82,53 +91,62 @@ const Questions = () => {
         />
       </div>
 
-      {voting ? (
-        <p className="text-green-600">¡Puedes votar ahora! ✅</p>
+      {selected? ( 
+      
+        voting ? (
+        <>
+          <p className="text-green-600">¡Puedes votar ahora! ✅</p>
+          <form className="space-y-2">
+            <fieldset>
+              <legend className="font-medium mb-2">Opciones para decidir sobre propuesta</legend>
+              <label className="block">
+                <input
+                  type="radio"
+                  name="myRadio"
+                  value="1"
+                  disabled={!voting}
+                  // checked={selected === "1"}
+                  onChange={ (e) => handleVoteChange(e, decisionText)}
+                  className="mr-2"
+                />{" "}
+                Aprueba
+              </label>
+              <label className="block">
+                <input
+                  type="radio"
+                  name="myRadio"
+                  value="2"
+                  disabled={!voting}
+                  // checked={selected === "2"}
+                  onChange={ (e) => handleVoteChange(e, decisionText) } 
+                  className="mr-2"
+                />{" "}
+                Rechaza
+              </label>
+              <label className="block">
+                <input
+                  type="radio"
+                  name="myRadio"
+                  value="0"
+                  disabled={!voting}
+                  // checked={selected === "0"}
+                  onChange={ (e) => handleVoteChange(e, decisionText) }
+                />{" "}
+                Blanco
+              </label>
+            </fieldset>
+          </form>
+        </>
+        ) : (
+          <p className="text-red-400">Ya votó ⏳</p>
+        )
       ) : (
-        <p className="text-red-400">La votación aún no está habilitada ⏳</p>
-      )}
+        <p className="text-gray-500">Esperando inicio de votación ⏳</p>
+      )
+      }
 
 
-      <form className="space-y-2">
-        <fieldset>
-          <legend className="font-medium mb-2">Opciones para decidir sobre propuesta</legend>
-          <label className="block">
-            <input
-              type="radio"
-              name="myRadio"
-              value="1"
-              disabled={!voting}
-              // checked={selected === "1"}
-              onChange={ (e) => handleVoteChange(e, decisionText)}
-              className="mr-2"
-            />{" "}
-            Aprueba
-          </label>
-          <label className="block">
-            <input
-              type="radio"
-              name="myRadio"
-              value="2"
-              disabled={!voting}
-              // checked={selected === "2"}
-              onChange={ (e) => handleVoteChange(e, decisionText) } 
-              className="mr-2"
-            />{" "}
-            Rechaza
-          </label>
-          <label className="block">
-            <input
-              type="radio"
-              name="myRadio"
-              value="0"
-              disabled={!voting}
-              // checked={selected === "0"}
-              onChange={ (e) => handleVoteChange(e, decisionText) }
-            />{" "}
-            Blanco
-          </label>
-        </fieldset>
-      </form>
+
     </div>
   );
 };
