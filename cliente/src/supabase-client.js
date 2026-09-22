@@ -2,7 +2,14 @@ import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = 'https://hhmqduncjwddwptghsaj.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhobXFkdW5jandkZHdwdGdoc2FqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE4ODQ0NTIsImV4cCI6MjA1NzQ2MDQ1Mn0.0IC33LEBv1O4QO9ctymNJu7nMjzXqk1P3Un9gf8WYds';
-export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: {
+    // Desactiva el uso de navigator.locks
+    lock: async (_name, _acquireTimeout, fn) => {
+      return await fn();
+    }
+    }
+});
 
 const channels = {};
 

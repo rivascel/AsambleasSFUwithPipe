@@ -719,7 +719,7 @@ const VideoGeneral = () => {
       // Configurar y reproducir el remote cuando recibe del producto admin
       // 9. Reproducir
       try {
-        targetVideo.muted = true;
+        targetVideo.muted = false;
         targetVideo.playsInline = true;
         await targetVideo.play();
         console.log(`▶️ Reproducción iniciada: ${consumerData.kind} [${consumerData.role}]`);
@@ -902,8 +902,13 @@ const VideoGeneral = () => {
         {stream ? (
           <>
             <div className="flex gap-4 mb-4">
-              <video ref={localRef} autoPlay playsInline muted className="rounded border"
-              style={{ width: '100%', height: '100%', objectFit: 'cover', display: isLive ? 'block' : 'none' }}
+              <video 
+                ref={localRef} 
+                autoPlay 
+                playsInline 
+                muted 
+                className="rounded border"
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: isLive ? 'block' : 'none' }}
               ></video>
             </div>
           </>
@@ -961,7 +966,12 @@ const VideoGeneral = () => {
         {
           remote ? (
             <div className="flex gap-4 mb-4">
-            <video ref={remoteRef} autoPlay playsInline muted className="rounded border"
+            <video 
+              ref={remoteRef} 
+              autoPlay 
+              playsInline 
+              // muted 
+              className="rounded border"
             style={{ width: '100%', height: '100%', objectFit: 'cover', display: isLiveOwner ? 'block' : 'none' }}
             ></video>
 

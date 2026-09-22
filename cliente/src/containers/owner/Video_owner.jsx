@@ -642,7 +642,7 @@ const VideoGeneral = () => {
     // Configurar y reproducir el remote cuando recibe del producto admin
     // 9. Reproducir
     try {
-      targetVideo.muted = true;
+      targetVideo.muted = false;
       targetVideo.playsInline = true;
       await targetVideo.play();
       console.log(`▶️ Reproducción iniciada: ${consumerData.kind} [${consumerData.role}]`);
@@ -831,8 +831,13 @@ const VideoGeneral = () => {
         <Title>Intervención del copropietario</Title>
         {viewerReady && stream ? (
           <>
-            <video ref={localRef} autoPlay playsInline className="w-full rounded border" 
-             style={{ width: '100%', height: '100%', objectFit: 'cover', display: isLiveOwner ? 'block' : 'none' }}
+            <video 
+              ref={localRef} 
+              autoPlay 
+              playsInline 
+              muted 
+              className="w-full rounded border" 
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: isLiveOwner ? 'block' : 'none' }}
             ></video>
 
             <div className="controls">
