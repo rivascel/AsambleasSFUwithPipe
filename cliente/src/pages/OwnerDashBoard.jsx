@@ -11,12 +11,13 @@ import Questions from '../containers/owner/Questions';
 import { UserContext } from "../components/UserContext";
 import AppContext from '../context/AppContext';
 import { getSocket  } from "../hooks/socket";
-// import { useLogoutOnClose } from '../hooks/useLogoutOnClose';
-
 import API_URL from '../config/api';
+import { cleanStaleStorage } from '../utils/cleanStorage';
+// import {useLogoutOnClose } from '../hooks/useLogoutOnClose';
 
 // const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_URL_LOCAL; 
 
+cleanStaleStorage();
 const apiUrl = API_URL;
 
 // Verificar que apiUrl esté definida
@@ -33,7 +34,7 @@ const Section = ({ title, children }) => (
 );
 
 const DashBoardOwner = () => {
-  //  useLogoutOnClose();
+  // useLogoutOnClose(logout);
   // const { apiUrl } = useContext(AppContext);
 
   // const { apiUrl } = axios.get(`${API_URL}/api/request-magic-link`);
