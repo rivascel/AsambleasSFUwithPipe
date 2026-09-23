@@ -391,7 +391,11 @@ const VideoGeneral = () => {
 
     const stream = await navigator.mediaDevices.getUserMedia({
     
-      audio: true,
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true
+      },
         video: true
         // {
         //   width: { ideal: 640, max: 1280 },   // Permite escalar hacia abajo (480p)

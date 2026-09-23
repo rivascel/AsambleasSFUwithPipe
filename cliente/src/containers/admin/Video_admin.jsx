@@ -467,7 +467,11 @@ const VideoGeneral = () => {
         video: {
           deviceId: { exact: selectedDevice }
         },
-        audio: true
+        audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true
+      },
       });
 
       console.log(stream);
