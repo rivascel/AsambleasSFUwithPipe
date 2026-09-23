@@ -186,4 +186,6 @@
 {"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"prop67","valor":0}
 {"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"prop68","valor":1}
 {"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"prop69","valor":2}
-{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"prop71","valor":0}
+{"interior":"XXX","apartamento":"XXX","correo":"administrador","proposicion":"prop69","qty":23,"valor":1}
+{"interior":"XXX","apartamento":"XXX","correo":"administrador","proposicion":"prop69","qty":43,"valor":2}
+{"interior":"XXX","apartamento":"XXX","correo":"administrador","proposicion":"prop69","qty":47,"valor":0}

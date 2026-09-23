@@ -51,8 +51,6 @@ const Questions = () => {
   const handleVoteChange = async (e, decision) => {
     // if (!votingEnabled) return;
     const value = e.target.value;
-    
-
 
     setVoting(false); //deshabilita la votacion
 

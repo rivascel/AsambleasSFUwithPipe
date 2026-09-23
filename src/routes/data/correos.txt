@@ -5,3 +5,4 @@
 {"alias":"Int 32 apto 301","correo":"gfgfgkjh@gmail.com","interior":"32","apto":"301","participacion":1}
 {"alias":"Int 54 apto 401","correo":"riv@hotmail.com","interior":"54","apto":"401","participacion":1}
 {"alias":"Revisor Fiscal","correo":"revisor@gmail.com","interior":"Revisor","apto":"XX","participacion":0}
+{"alias":"administrador","correo":"administrador","interior":"Administrador","apto":"XX","participacion":null}
