@@ -13,7 +13,6 @@ import AppContext from '../context/AppContext';
 import { getSocket  } from "../hooks/socket";
 import API_URL from '../config/api';
 import { cleanStaleStorage } from '../utils/cleanStorage';
-// import {useLogoutOnClose } from '../hooks/useLogoutOnClose';
 
 // const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_URL_LOCAL; 
 

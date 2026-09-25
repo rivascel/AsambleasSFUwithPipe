@@ -189,3 +189,6 @@
 {"interior":"XXX","apartamento":"XXX","correo":"administrador","proposicion":"prop69","qty":23,"valor":1}
 {"interior":"XXX","apartamento":"XXX","correo":"administrador","proposicion":"prop69","qty":43,"valor":2}
 {"interior":"XXX","apartamento":"XXX","correo":"administrador","proposicion":"prop69","qty":47,"valor":0}
+{"interior":"XXX","apartamento":"XXX","correo":"administrador","proposicion":"prop69","qty":23,"valor":0}
+{"interior":"XXX","apartamento":"XXX","correo":"administrador","proposicion":"prop69","qty":78,"valor":1}
+{"interior":"XXX","apartamento":"XXX","correo":"administrador","proposicion":"prop69","qty":12,"valor":2}
