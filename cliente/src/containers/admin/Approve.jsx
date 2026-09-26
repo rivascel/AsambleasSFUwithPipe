@@ -33,6 +33,8 @@ const AttendeesList = () => {
     let channelRequests, channelApprovals,channelReqAppr;
 
     const fetchUsers = async () => {
+
+      
       try {
         console.log("🔄 Ejecutando fetchUsers...");
           const pendingRes=await getPendingRequest(roomId);
@@ -41,13 +43,50 @@ const AttendeesList = () => {
         console.log("pendingUsers:", pendingRes);
         console.log("approvedUsers:", approvedRes);
 
-        const pendingIds = Array.isArray(pendingRes) 
-          ? pendingRes.map(user => user?.user_id || user?.id).filter(id => id) 
+        // const pendingIds = Array.isArray(pendingRes) 
+        //   ? pendingRes.map(user => user?.user_id || user?.id)
+        //     .filter(id => id)
+        //   : [];
+
+        // const pendingIds = Array.isArray(pendingRes)
+        //   ? pendingRes
+        //       .map(user => ({
+        //         user_id: user?.user_id || user?.id,
+        //         alias: user?.alias
+        //       }))
+        //       .filter(user => user.user_id)
+        //   : [];
+
+        // const approvedIds = Array.isArray(approvedRes)
+        //   ? approvedRes
+        //       .map(user => ({
+        //         user_id: user?.user_id || user?.id,
+        //         alias: user?.alias
+        //       }))
+        //       // .filter(user => user.user_id)
+        //   : [];
+
+        // const approvedIds = Array.isArray(approvedRes) 
+        //   ? approvedRes.filter(user => user?.user_id || user?.id)
+        //   : "[]";
+
+        // const approvedIds = Array.isArray(approvedRes) 
+        //   ? approvedRes.filter(id => id) 
+        //   : [];
+
+        const normalizeUsers = (res) =>
+        Array.isArray(res)
+          ? res
+              .map(user => ({
+                user_id: user?.user_id || user?.id,
+                alias: user?.alias
+              }))
+              .filter(user => user.user_id)
           : [];
 
-        const approvedIds = Array.isArray(approvedRes) 
-          ? approvedRes.filter(id => id) 
-          : [];
+          const pendingIds = normalizeUsers(pendingRes);
+          const approvedIds = normalizeUsers(approvedRes);
+
         
         console.log(`📊 Resultado fetchUsers - Pendientes: ${pendingIds.length}, Aprobados: ${approvedIds.length}`);
 
@@ -113,9 +152,10 @@ const AttendeesList = () => {
 
 
   const handleApprove = async (userId) => {
+    console.log("que es userId",userId);
     try {
-      console.log(`✅ Aprobando usuario ${userId} en el servidor...`);
-      approveUser(roomId, userId);
+      console.log(`✅ Aprobando usuario ${userId.user_id} en el servidor...`);
+      await approveUser(roomId, userId);
 
       // if (response.ok) {
         // console.log(`✅ Usuario ${userId} aprobado en el servidor`);
@@ -142,10 +182,10 @@ const AttendeesList = () => {
   const handleCancel = async (userId) => {
     try {
 
-      deleteCandidate(userId);
+      deleteCandidate(userId.user_id);
       
       // if (response.ok) {
-        console.log(`✅ Aprobación de ${userId} cancelada en el servidor`);
+        console.log(`✅ Aprobación de ${userId.user.id} cancelada en el servidor`);
 
         socketRef.current.emit("cancel-notification", { userId, roomId: "main-room" });
         
@@ -177,8 +217,8 @@ const AttendeesList = () => {
               <div className="h-48 overflow-y-auto">
               <h2 className="text-lg font-bold mb-2">Usuarios pendientes</h2>
               {pendingUsersIds.map((userId, index) => (
-                <div key={`pending-${userId}-${index}`} className="mb-2 p-2 border rounded">
-                  <p>{userId}</p>
+                <div key={`pending-${userId.alias}-${index}`} className="mb-2 p-2 border rounded">
+                  <p>{userId.alias}</p>
                   <button
                     onClick={() => handleApprove(userId)}
                     className="bg-green-500 text-red px-3 py-1 rounded hover:bg-green-600 mt-1"
@@ -197,8 +237,8 @@ const AttendeesList = () => {
               
               
                 {approvedUsersIds.map((userId, index) => (
-                  <div key={`approved-${userId}-${index}`} className="mb-2 p-2 border rounded">
-                    <p>{userId}</p>
+                  <div key={`approved-${userId.alias}-${index}`} className="mb-2 p-2 border rounded">
+                    <p>{userId.alias}</p>
                     <button
                       onClick={() => handleCancel(userId)}
                       className="bg-red-500 text-red px-3 py-1 rounded hover:bg-red-600 mt-1"

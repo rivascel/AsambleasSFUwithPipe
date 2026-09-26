@@ -13,7 +13,7 @@ const AttendeesList = () => {
   const roomId = 'main-room';
   const [loading, setLoading] = useState(true);
   const [pendingUsersIds, setPendingUsersIds] = useState([]);
-  const ownerData = useRef();
+  const { ownerData } = useContext(UserContext);
 
    // Elimina updatedUsers y usa los estados directamente
   const hasPending = pendingUsersIds.length > 0;
@@ -40,12 +40,14 @@ const AttendeesList = () => {
     const fetchUsers = async () => {
       try {
         console.log("🔄 Ejecutando fetchUsers...");
-          const pendingRes=await getPendingRequest(roomId);
+        console.log("ownerData",ownerData);
+
+        const pendingRes=await getPendingRequest(roomId);
 
         console.log("pendingUsers:", pendingRes);
 
         const pendingIds = Array.isArray(pendingRes) 
-          ? pendingRes.map(user => user?.user_id || user?.id).filter(id => id) 
+          ? pendingRes.filter(user => user?.user_id || user?.id)
           : [];
 
         // console.log(`📊 Resultado fetchUsers - Pendientes: ${pendingIds.length}`);
@@ -175,7 +177,7 @@ useEffect(() => {
                       {
                       typeof user === 'object' && user !== null 
                       ? 
-                      user.alias 
+                      user.alias
                       : user
                       }
                     </p>

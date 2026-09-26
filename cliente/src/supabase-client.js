@@ -533,7 +533,7 @@ export async function registerViewer(roomId, viewerId ) {
 }
 
 //El usuario se une a la sala
-export async function requestToJoinRoom(roomId, userId) {
+export async function requestToJoinRoom(roomId, userId, interior, apto) {
     const { data, error1 } = await supabase
         .from('requests')
         .select('user_id')
@@ -552,7 +552,7 @@ export async function requestToJoinRoom(roomId, userId) {
 
     const { error } = await supabase
       .from('requests')
-      .insert([{ user_id: userId, status: 'pending', room_id: roomId }]);
+      .insert([{ user_id: userId, status: 'pending', room_id: roomId, alias: `${interior}-${apto}` }]);
   
     if (error) {
       console.error("Error sending request:", error);
@@ -565,7 +565,7 @@ export async function requestToJoinRoom(roomId, userId) {
 export async function getPendingRequest(roomId) {
     const { data, error } = await supabase
         .from('requests')
-        .select('user_id')
+        .select('user_id, alias')
         .eq('room_id', roomId)
         .eq('status', 'pending')
         // .single();
@@ -574,13 +574,18 @@ export async function getPendingRequest(roomId) {
         throw error;
     }
     // console.log('Supabase data:', data);
-    return data;
+    // return data;
+    return data.map(row => ({
+          user_id: row?.user_id,
+          alias: row?.alias
+
+        }))
 }
 
 export async function getPendingRequestById(roomId, userId) {
     const { data: request, error } = await supabase
         .from('requests')
-        .select('user_id')
+        .select('user_id, alias')
         .eq('room_id', roomId)
         .eq('user_id', userId)
         .eq('status', 'pending')
@@ -599,7 +604,7 @@ export async function getApprovedUserById(roomId, userId) {
     // obtener lista actual de candidatos en sala
     const { data: requestsData, error: roomError } = await supabase
         .from('requests')
-        .select('user_id')
+        .select('user_id, alias')
         .eq('room_id', roomId)
         .eq('status', 'approved')
         .eq('user_id', userId)
@@ -618,7 +623,7 @@ export async function ApprovedUserQuery(roomId) {
     try {
         const { data, error } = await supabase
         .from('requests')
-        .select('user_id')
+        .select('user_id, alias')
         .eq('room_id', roomId)
         .eq('status', 'approved')
         // .single();
@@ -632,7 +637,11 @@ export async function ApprovedUserQuery(roomId) {
             return [];
         };
 
-        return data.map(row => row.user_id).filter(Boolean) 
+        return data.map(row => ({
+          user_id: row?.user_id,
+          alias: row?.alias
+
+        }))
     } catch (error) {
         console.error('Error en ApprovedUserQuery:', error);
         // throw error; // Propaga el error para manejarlo en el endpoint
@@ -646,8 +655,9 @@ export async function approveUser(roomId, userId, approved='approved') {
     const { error } = await supabase
         .from('requests')
         .update({ status: 'approved' })
-        .eq('user_id', userId)
+        .eq('user_id', userId.user_id)
         .eq('room_id', roomId)
+        // .select()
 
     if (error) throw error;
 

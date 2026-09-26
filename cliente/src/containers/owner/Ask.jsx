@@ -15,7 +15,10 @@ const AskToParticipate = () => {
   const roomId = 'main-room';
   const [loading, setLoading] = useState(true);
   const [displayTime, setDisplayTime] = useState("00:00");
-  const { email, setCheckApprove } = useContext(UserContext);
+  const { email, setCheckApprove, ownerData } = useContext(UserContext);
+
+console.log("🔎 Ask.jsx ownerData:", ownerData);
+
   const [requestStatus, setRequestStatus] = useState(() => {
     const saved = localStorage.getItem("requestStatus");
   let flag;
@@ -56,6 +59,8 @@ const AskToParticipate = () => {
   const channel = listenToUserRequests(
     roomId, 
     email, 
+
+  
     (requestData) => {
       // console.log("📨 [AskToParticipate] Datos recibidos:", {
       //   data: requestData,
@@ -104,7 +109,7 @@ const AskToParticipate = () => {
       if (Array.isArray(pendingUsersById) && pendingUsersById.includes(email)) {
       } else if (Array.isArray(approvedUsersById) && approvedUsersById.includes(email)) {
       }
-
+      
 
     } catch (error) {
       console.error("Error cargando usuarios:", error);
@@ -115,9 +120,18 @@ const AskToParticipate = () => {
   },[email]);
 
   const handleRequest = async () => {
+    // console.log("🔥🔥🔥 ENTRÓ A handleRequest DE ASK.JSX 🔥🔥🔥");
     try {
-      requestToJoinRoom(roomId, email);
-      
+       if (!ownerData) {
+      console.error("❌ ownerData ES UNDEFINED/NULL");
+      return;
+    }
+
+    // console.log("🏠 interior:", ownerData.interior);
+    // console.log("🚪 apartamento:", ownerData.apartamento);
+    
+
+      requestToJoinRoom(roomId, email, ownerData.interior, ownerData.apartamento);
       // setReq(true);
       setRequestStatus('pending');
 
