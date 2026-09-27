@@ -36,7 +36,7 @@ const Header = () => {
         if (sesion === null || sesion === undefined || sesion === 0) return; 
         const socket = getSocket(apiUrl);
         socketRef.current = socket;
-        socketRef.current.emit("sesionStarted", sesion);
+        
         fetchOwners(); // Recupera propietarios al iniciar sesión
         calcularQuorum(ownerDataRef.current); // Calcula el quorum al iniciar sesión
         
@@ -54,7 +54,10 @@ const Header = () => {
       socketRef.current = socket;
 
       const handleUpdate = () => {
+
         fetchOwners(); //recupera inscritos al momento
+        
+        socketRef.current.emit("sesionStarted", sesionRef.current.value);
       };
 
       if (numberHouses > 0 && ownerDataRef.current.length > 0) {
@@ -74,7 +77,6 @@ const Header = () => {
 
     
     const fetchOwners = async () => {
-        console.log("🔄 fetchOwners llamado - ");
         
         try {
           const response = await axios.get(`${apiUrl}/api/emailFile`, {
@@ -148,6 +150,8 @@ const Header = () => {
        // Obtener valores directamente del DOM
       const numberHousesValue = parseInt(numberHousesRef.current.value);
       const sesionValue = parseInt(sesionRef.current.value);
+
+      // registerAdminIsActive(roomId, )
 
       console.log(numberHousesRef.current.value);
       console.log(numberHousesValue);

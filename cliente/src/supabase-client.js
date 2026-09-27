@@ -308,6 +308,26 @@ export async function registerAdminIsActive(roomId, adminId) {
   }  
 }
 
+export async function getSesion(roomId) {
+  try{
+    const { data, error} = await supabase
+      .from("active_users")
+      .select("sesion")
+      .eq('room_id',roomId)
+      .eq(is_streaming, true)
+      .single();
+
+      if (error) {
+        console.error("Error obteniendo datos:", error);
+        return false;
+      }
+      return data;
+      } catch (error){
+        console.error("❌ Excepción:", err);
+    return false;
+    }
+} 
+
 //Los vieweres escuchan las señales del admin y envian la respuesta (answers)
 // export const listenToSignalsFromAdmin = async (userId, callback) => {
 

@@ -13,6 +13,7 @@ import AppContext from '../context/AppContext';
 import { getSocket  } from "../hooks/socket";
 import API_URL from '../config/api';
 import { cleanStaleStorage } from '../utils/cleanStorage';
+import { getSesion } from '../supabase-client';
 
 // const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_URL_LOCAL; 
 
@@ -44,7 +45,7 @@ const DashBoardOwner = () => {
   // const [votesData, setVotesData] = useState({}); // lista de todos los propietarios
   const { email, login, logout, role, setQuorum, setApprovalVotes, setRejectVotes, setBlankVotes, ownerData } = useContext(UserContext);
   const ownerDataRef = useRef(ownerData);
-  const sesion = useRef(null);
+  const sesionRef = useRef(null);
   const socketRef = useRef(null);
   const [participacion, setParticipacion] = useState(0); // Estado para forzar re-renderizado cuando cambie la participación
   const particRef = useRef(null); // Ref para mantener el valor actual de la participación
@@ -64,12 +65,13 @@ const DashBoardOwner = () => {
         return;
       }
 
-      sesion.current = numberSesion;
-      await ownerRegister(email, sesion.current); // Registra al propietario en la sesión actual
+      sesionRef.current = numberSesion;
+      await ownerRegister(sesionRef.current); // Registra al propietario en la sesión actual
       // await fetchOwners();
 
     }
     socketRef.current.on("sesionStarted", handleSesionStarted);
+
     socketRef.current.on("numberHouses", (numberHou) => {
       numberHouses.current = numberHou;
     });
@@ -110,7 +112,8 @@ const DashBoardOwner = () => {
             interior: response.data.owner.interior,
             apartamento: response.data.owner.apto,  // "apto" en el archivo -> "apartamento" en tu app
             participacion: response.data.participacion,
-            alias: response.data.owner.alias
+            alias: response.data.owner.alias,
+
         };
 
         console.log("ownerData",ownerDataRef);
@@ -141,7 +144,8 @@ const DashBoardOwner = () => {
       if (connectedEmail === email) {
         await socketRef.current.emit("requestJoinSesion");
         !!ownerDataRef.current
-        await ownerRegister(email, sesion.current);
+        // sesion.current = await getSesion(roomId);
+        // await ownerRegister(email, sesion.current);
         fetchOwners();
       };
     };
@@ -215,7 +219,7 @@ const DashBoardOwner = () => {
   };
 
 
-  const ownerRegister = async (email, sesion) => {
+  const ownerRegister = async (sesion) => {
 
       const registro = {
         correo: ownerDataRef.current.correo,
