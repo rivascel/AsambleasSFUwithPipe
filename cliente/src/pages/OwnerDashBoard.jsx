@@ -152,12 +152,8 @@ const DashBoardOwner = () => {
 
     socketRef.current.on("userConnected", handleUserConnected);
 
-
     return () => socketRef.current.off("userConnected", handleUserConnected);
 
-
-
-    
   }, [email]);      
 
   useEffect(() => {

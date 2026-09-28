@@ -21,7 +21,7 @@ const Header = () => {
     const [participacion, setParticipacion] = useState(0); // Estado para forzar re-renderizado cuando cambie la participación
     const particRef = useRef(null); // Ref para mantener el valor actual de la participación
     
-    const ownerDataRef = useRef(ownerData); // Ref para mantener el valor actual de ownerData
+    // const ownerDataRef = useRef(ownerData); // Ref para mantener el valor actual de ownerData
 
 
     useEffect(() => {
@@ -59,28 +59,28 @@ const Header = () => {
                     <div className="p-2 w-full md:w-auto">
                         <strong>Interior</strong>
                         <p id="interior">
-                            {ownerDataRef.current?.interior || ''}
+                            {ownerData?.interior || ''}
                             </p>
                     </div>
                 
                     <div className="p-2 w-full md:w-auto">
                         <strong>Apartamento</strong>
                         <p id="apartamento">
-                            {ownerDataRef.current?.apartamento || ''}
+                            {ownerData?.apartamento || ''}
                             </p>
                     </div>
                 
                     <div className="p-2 w-full md:w-auto">
                         <strong>Correo Electrónico</strong>
                         <p id="correo">
-                            {ownerDataRef.current?.correo || ''}
+                            {ownerData?.correo || ''}
                             </p>
                     </div>
                 
                     <div className="p-1">
                         <strong>Inmuebles que representa</strong>
                         <p id="participacion">
-                            {ownerDataRef.current?.participacion || ''}
+                            {ownerData?.participacion || ''}
                             </p>
                     </div>
                 
