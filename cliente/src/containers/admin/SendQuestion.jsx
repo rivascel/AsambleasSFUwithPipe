@@ -22,28 +22,68 @@ const SendQuestions = () => {
 
   // const [decisionText, setDecisionText] = useState("Propuesta de ejemplo para ser votada.");
   const { decisionText, setDecisionText } = useContext(UserContext);
+  const [option1, setOption1] = useState("Opción 1");
+  const [option2, setOption2] = useState("Opción 2");
+  const [option3, setOption3] = useState("Opción 3");
 
   const SendtoUsers = (e) => {
     socketRef.current.emit('send-decision', decisionText);
   };
 
+  const SendOptionsToUsers = (e) => {
+    socketRef.current.emit('send-options', { option1, option2, option3 });
+  };
+
   return (
     <div className="bg-white p-4 rounded shadow-md space-y-4">
-      <div>
+      <>
         <textarea
           value={decisionText}
           onChange={(e) => setDecisionText(e.target.value)}
           className="w-full border rounded p-2"
           rows={4}
         />
+
+
         <button
             onClick={SendtoUsers}
             className="bg-blue-600 text-black px-6 py-2 rounded hover:bg-blue-700"
           >
             Envie Pregunta a los asistentes
-          </button>
-      </div>
+        </button>
 
+        <br />
+        <input 
+          value={option1} 
+          onChange={(e) => setOption1(e.target.value)} 
+          className="border rounded p-2"
+          placeholder="Opción 1"
+        />
+        <br />
+        <input 
+          value={option2} 
+          onChange={(e) => setOption2(e.target.value)} 
+          className="border rounded p-2"
+          placeholder="Opción 2"
+        />
+        <br />
+        <input 
+          value={option3} 
+          onChange={(e) => setOption3(e.target.value)} 
+          className="border rounded p-2"
+          placeholder="Opción 3"
+        />
+        <br />
+
+        
+        <button
+            onClick={SendOptionsToUsers}
+            className="bg-blue-600 text-black px-6 py-2 rounded hover:bg-blue-700"
+          >
+            Envie Opciones a los asistentes
+        </button>
+        
+      </>
       
     </div>
   );

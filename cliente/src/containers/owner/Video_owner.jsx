@@ -24,6 +24,7 @@ const VideoGeneral = () => {
   const localRef = useRef();
   const remoteRef = useRef();
   const remoteRefTemp = useRef();
+  const containerRef = useRef();
   const quality = useVideoQuality(remoteRef);
   const isVisible = useVisibility(remoteRef);
   const [currentQuality, setCurrentQuality] = useState(null);
@@ -60,6 +61,7 @@ const VideoGeneral = () => {
   const [isLiveOwner, setIsLiveOwner] = useState(false);
   const imageRef = useRef(null);
   const [socketReady, setSocketReady] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
   let socket;
 
 
@@ -794,27 +796,61 @@ const VideoGeneral = () => {
     }
   };
 
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        // Si el contenedor ya NO está visible en el viewport → minimizar
+        // Si vuelve a estar visible → restaurar
+        setIsMinimized(!entry.isIntersecting);
+      },
+      {
+        threshold: 0, // se dispara cuando cruza el borde
+        rootMargin: '0px',
+      }
+    );
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
+
   return (
+    
     <div className="space-y-6">
       {/* Transmisión en vivo */}
       <div className="bg-white p-4 rounded shadow-md">
 
-        <div>
-          {/* <h2 className="text-xl font-semibold mb-2 text-teal-600">Asamblea en vivo</h2> */}
-          <Title>Asamblea en vivo</Title>
-          {/* <video ref={remoteRef} autoPlay playsInline muted={true} className="w-full rounded border"></video> */}
-          
-          <div 
-          // style={{ width: '100%', aspectRatio: '16/9', backgroundColor: '#1a1a1a' }} 
-            className="rounded overflow-hidden">
-              <video 
+        {/* <h2 className="text-xl font-semibold mb-2 text-teal-600">Asamblea en vivo</h2> */}
+        <Title>Asamblea en vivo</Title>
+        {/* <video ref={remoteRef} autoPlay playsInline muted={true} className="w-full rounded border"></video> */}
+        
+        <div 
+        // style={{ width: '100%', aspectRatio: '16/9', backgroundColor: '#1a1a1a' }} 
+          ref={containerRef}
+          className="relative w-full aspect-video rounded "
+          >
+
+            <video 
                   ref={remoteRef} 
                   autoPlay 
                   playsInline 
-                  // muted 
-                  style={{ width: '100%', height: '80%', objectFit: 'cover', display: isLive ? 'block' : 'none' }}
+                  className={
+                    isMinimized && isLive ? 
+                    "fixed bottom-5 left-2 w-[240px] aspect-video z-50 rounded shadow-lg object-cover" 
+                    : "absolute inset-0 w-full h-full rounded object-cover"
+                  }
+                  style={{ 
+                    display: isLive ? 'block' : 'none' 
+
+                  }}
               />
-          </div>
+
+
+        </div> 
+
 
           {/* <h2 className="text-xl font-semibold mb-2 text-teal-600">Intervención asambleista</h2> */}
           <Title>Intervención asambleista</Title>
@@ -829,6 +865,19 @@ const VideoGeneral = () => {
                   style={{ width: '100%', height: '100%', objectFit: 'cover', display: isLiveAttended ? 'block' : 'none' }}
               />
           </div>
+        
+        {/* <h2 className="text-xl font-semibold mb-2 text-teal-600">Intervención asambleista</h2> */}
+        <Title>Intervención asambleista</Title>
+        <div 
+        // style={{ width: '100%', aspectRatio: '16/9', backgroundColor: '#1a1a1a' }}
+        className="rounded overflow-hidden">
+            <video 
+                ref={remoteRefTemp} 
+                autoPlay 
+                playsInline 
+                // muted 
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: isLiveAttended ? 'block' : 'none' }}
+            />
         </div>
 
         {/* <h2 className="text-xl font-semibold mb-2 text-teal-600">Intervención del copropietario</h2> */}
@@ -882,11 +931,10 @@ const VideoGeneral = () => {
           ):(
             <p>No hay petición de intervención</p>
           )
-
         }
-
       </div>
     </div>
+  
   )
 }
 export default VideoGeneral;

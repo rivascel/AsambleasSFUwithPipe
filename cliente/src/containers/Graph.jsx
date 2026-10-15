@@ -17,7 +17,7 @@ import {
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 const Graph = () => {
-    const { approvalVotes, rejectVotes, blankVotes } = useContext(UserContext);
+    const { approvalVotes, rejectVotes, blankVotes, optionsLabel } = useContext(UserContext);
     let approve; 
     let reject;
     let blank;
@@ -36,6 +36,8 @@ const Graph = () => {
   // };
 
   useEffect(()=>{
+
+
     const results = () => {
 
       approve = approvalVotes;
@@ -75,18 +77,23 @@ const Graph = () => {
 
   return (
     <>
-    <div className="bg-white p-4 rounded shadow-md">
+    <div className="bg-white p-4 rounded shadow-md" >
       <h2 className="text-xl font-semibold mb-4 text-teal-600">Resultados Votación</h2>
-      <Bar data={data} options={options} />
+      <div className="w-75 h-50">
+        <Bar data={data} options={options} 
+      
+      
+      />
+      </div>
     </div>
     <div className="italic text-blue-600">
-        Aprueban: {approvalVotes} 
-        Rechazan: {rejectVotes} 
-        Blanco: {blankVotes} 
+        optionsLabel.Options1 || Aprueban: {approvalVotes} 
+        optionsLabel.Options2 || Rechazan: {rejectVotes} 
+        optionsLabel.Options3 || Blanco: {blankVotes} 
     </div>
-    <div className="italic text-blue-600">
-        Porc. Aprueban: {approvalVotes/(approvalVotes+rejectVotes+rejectVotes)*100}%
-        PorRechazan: {rejectVotes/(approvalVotes+rejectVotes+rejectVotes)*100}%
+    <div className="italic text-blue-600 w-75 h-50">
+        Porc. Aprueban: {approvalVotes/(approvalVotes+rejectVotes+blankVotes)*100}%
+        Porc. Rechazan: {rejectVotes/(approvalVotes+rejectVotes+blankVotes)*100}%
         Blanco:  {blankVotes/(approvalVotes+rejectVotes+rejectVotes)*100}%
     </div>
     </>

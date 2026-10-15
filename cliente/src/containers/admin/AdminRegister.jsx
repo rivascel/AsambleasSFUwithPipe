@@ -86,7 +86,7 @@ const RegisterAdmin = ({ onRegister }) => {
             <div className="flex justify-center items-center min-h-screen">
             {/* Usamos el componente maestro Card */}
                 <Card className="text-center w-full max-w-sm">
-                    <h1 className="text-lg font-semibold mb-4">Registro de Propietario</h1>
+                    <h1 className="text-lg font-semibold mb-4">Registro de Administrador</h1>
                     
                     {/* <form onSubmit={handleSendLink}> */}
                         <input type="email" id="username" value={email} onChange={(e) => setEmail(e.target.value)} />

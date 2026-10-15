@@ -43,7 +43,7 @@ const DashBoardOwner = () => {
   const [error, setError] = useState(null);
   // const [quorum, setQuorum] = useState(null);
   // const [votesData, setVotesData] = useState({}); // lista de todos los propietarios
-  const { email, login, logout, role, setQuorum, setApprovalVotes, setRejectVotes, setBlankVotes, ownerData } = useContext(UserContext);
+  const { email, login, logout, role, setQuorum, setApprovalVotes, setRejectVotes, setBlankVotes, ownerData, optionsLabel } = useContext(UserContext);
   const ownerDataRef = useRef(ownerData);
   const sesionRef = useRef(null);
   const socketRef = useRef(null);
@@ -161,12 +161,20 @@ const DashBoardOwner = () => {
         setApprovalVotes(data.approval);
         setRejectVotes(data.reject);
         setBlankVotes(data.blank);
+
+        optionsLabel.option1 = data.option1;
+        optionsLabel.option2 = data.option2;
+        optionsLabel.option3 = data.option3;
+
+
     };
 
     socketRef.current.on('send-votes', handleUpdateVotes);
+    socketRef.current.on('send-options', handleUpdateVotes);
 
     return () => {
         socketRef.current.off('send-votes', handleUpdateVotes);
+        socketRef.current.off('send-options', handleUpdateVotes);
     };
 }, []);
 
@@ -224,7 +232,7 @@ const DashBoardOwner = () => {
         participacion: ownerDataRef.current.participacion,
         alias: ownerDataRef.current.alias,
         asistencia: 1, 
-        fecha: new Date().toISOString(),
+        fecha: new Date().toLocalString("sv-SE", { timeZone: "America/Bogota" }).replace("T", " "), // Formato: YYYY-MM-DD HH:mm:ss
         sesion: sesion
       };
 

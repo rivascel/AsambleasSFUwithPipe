@@ -81,7 +81,7 @@ export default async function sendMagicLink( email, role, token,) {
           
             
           ">Acceso a la asamblea</a>
-          <a>${magicLink}</a>
+          
     
           <p>Este enlace expira en 15 minutos.</p>
         `,

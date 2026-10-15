@@ -1,1 +1,2 @@
-{"correo":"rivascel@gmail.com","interior":"14","apartamento":"101","participacion":2,"alias":"Int 14 apto 101","asistencia":1,"fecha":"2026-09-27T20:34:51.153Z","sesion":"1"}
+{"correo":"administrador","interior":"Administrador","apartamento":"XX","participacion":null,"alias":"administrador","asistencia":1,"fecha":"2026-10-13T20:16:00.436Z","sesion":""}
+{"correo":"rivascel@gmail.com","interior":"14","apartamento":"101","participacion":2,"alias":"Int 14 apto 101","asistencia":1,"fecha":"2026-10-13T21:22:13.201Z","sesion":""}

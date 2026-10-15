@@ -29,11 +29,23 @@ const Questions = () => {
   const { email, ownerData } = useContext(UserContext);
   const [voting, setVoting] = useState(false); // Cambia a true cuando debas habilitar la votación
   // const { setVotingEnabled  } = useContext(UserContext);
+  const [options, setOptions] = useState("");
 
   useEffect(() => {
       socketRef.current.on('receive-decision', text => {
         setSelected(false); // Reinicia el estado de selección
         setDecisionText(text);
+      });
+
+      socketRef.current.on('receive-options', options => {
+        console.log("Opciones recibidas:", options);
+        // Aquí puedes manejar las opciones recibidas según tus necesidades
+        setOptions({  
+          option1: options.option1,
+          option2: options.option2,
+          option3: options.option3
+        });
+
       });
 
       socketRef.current.on("inicioVotacion", text=>{
@@ -43,6 +55,7 @@ const Questions = () => {
       // Limpieza para evitar múltiples listeners
       return () => {
         socketRef.current.off('receive-decision');
+        socketRef.current.off('receive-options');
         socketRef.current.off('inicioVotacion');
       };
     }, []);
@@ -88,6 +101,17 @@ const Questions = () => {
           rows={4}
         />
       </div>
+      <div className="text-gray-500 text-sm">
+        <h3 className="font-semibold mb-1">Opciones para decidir sobre planillas:</h3>
+        <br />
+        {options.option1} 
+        <br />
+        {options.option2} 
+        <br />
+        {options.option3}
+
+
+      </div>
 
       {selected? ( 
       
@@ -107,7 +131,7 @@ const Questions = () => {
                   onChange={ (e) => handleVoteChange(e, decisionText)}
                   className="mr-2"
                 />{" "}
-                Aprueba
+                {options.option1}
               </label>
               <label className="block">
                 <input
@@ -119,7 +143,7 @@ const Questions = () => {
                   onChange={ (e) => handleVoteChange(e, decisionText) } 
                   className="mr-2"
                 />{" "}
-                Rechaza
+                {options.option2}
               </label>
               <label className="block">
                 <input
@@ -130,7 +154,7 @@ const Questions = () => {
                   // checked={selected === "0"}
                   onChange={ (e) => handleVoteChange(e, decisionText) }
                 />{" "}
-                Blanco
+                {options.option3}
               </label>
             </fieldset>
           </form>

@@ -30,6 +30,7 @@ const UserProvider = ({ children }) => {
   const [approvalVotes, setApprovalVotes] = useState(0);
   const [rejectVotes, setRejectVotes] = useState(0);
   const [blankVotes, setBlankVotes] = useState(0);    
+  const [optionsLabel, setOptionsLabel] = useState("");
   
   const [checkApprove, setCheckApprove] = useState(null);
   const [isAuthenticatedAdmin, setIsAuthenticatedAdmin] = useState(false);
@@ -179,7 +180,11 @@ const UserProvider = ({ children }) => {
         // properties,
         // numberHouses,
         // setNumberHouses
-        quorumPercentage
+        quorumPercentage,
+        optionsLabel,
+        setOptionsLabel,
+        setQuorumPercentage
+        
        }}>
       {children}
     </UserContext.Provider>
