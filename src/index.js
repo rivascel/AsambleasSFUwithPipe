@@ -112,8 +112,8 @@ if (process.env.NODE_ENV === 'development') {
   // Único caso donde Node mismo necesita hablar HTTPS directamente,
   // porque no hay Nginx/Caddy/Render delante hacienda de proxy TLS
   const options = {
-    key: fs.readFileSync(path.resolve(__dirname, 'ssl/192.168.5.105+2-key.pem')),
-    cert: fs.readFileSync(path.resolve(__dirname, 'ssl/192.168.5.105+2.pem')),
+    key: fs.readFileSync(path.resolve(__dirname, 'ssl/192.168.9.168+2-key.pem')),
+    cert: fs.readFileSync(path.resolve(__dirname, 'ssl/192.168.9.168+2.pem')),
   };
   server = https.createServer(options, app);
 } else {

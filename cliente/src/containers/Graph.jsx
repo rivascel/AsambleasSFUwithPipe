@@ -23,8 +23,14 @@ const Graph = () => {
     let blank;
     let approvePorc,rejectPorc,blankPorc
 
+    console.log("optionsLabel en el chart:", optionsLabel);
+    
     const data = {
-      labels: ["Aprueba", "Rechaza", "Blanco"],
+      labels: [
+        optionsLabel?.option1 ?? "Aprueban",
+        optionsLabel?.option2 ?? "Rechazan",
+        optionsLabel?.option3 ?? "Blanco",
+      ],
       datasets: [
         {
           label: "Votos",
@@ -33,7 +39,7 @@ const Graph = () => {
         },
       ],
     };
-  // };
+
 
   useEffect(()=>{
 
@@ -80,21 +86,18 @@ const Graph = () => {
     <div className="bg-white p-4 rounded shadow-md" >
       <h2 className="text-xl font-semibold mb-4 text-teal-600">Resultados Votación</h2>
       <div className="w-75 h-50">
-        <Bar data={data} options={options} 
-      
-      
-      />
+        <Bar data={data} options={options} />
       </div>
     </div>
     <div className="italic text-blue-600">
-        optionsLabel.Options1 || Aprueban: {approvalVotes} 
-        optionsLabel.Options2 || Rechazan: {rejectVotes} 
-        optionsLabel.Options3 || Blanco: {blankVotes} 
+       {optionsLabel.option1 || "Aprueban:"} {approvalVotes} <br />
+        {optionsLabel.option2 || "Rechazan:"} {rejectVotes} <br />
+        {optionsLabel.option3 || "Blanco:"} {blankVotes} <br />
     </div>
     <div className="italic text-blue-600 w-75 h-50">
-        Porc. Aprueban: {approvalVotes/(approvalVotes+rejectVotes+blankVotes)*100}%
-        Porc. Rechazan: {rejectVotes/(approvalVotes+rejectVotes+blankVotes)*100}%
-        Blanco:  {blankVotes/(approvalVotes+rejectVotes+rejectVotes)*100}%
+        Porc. Aprueban: {approvalVotes/(approvalVotes+rejectVotes+blankVotes)*100}% <br />
+        Porc. Rechazan: {rejectVotes/(approvalVotes+rejectVotes+blankVotes)*100}% <br />
+        Blanco:  {blankVotes/(approvalVotes+rejectVotes+rejectVotes)*100}% <br />
     </div>
     </>
   );
