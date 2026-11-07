@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState, useContext, useMemo } from 'react';
 import { UserContext } from "../components/UserContext";
 
 import { Bar } from "react-chartjs-2";
@@ -17,13 +17,27 @@ import {
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 const Graph = () => {
-    const { approvalVotes, rejectVotes, blankVotes, optionsLabel } = useContext(UserContext);
+    const { approvalVotes, rejectVotes, blankVotes, optionsLabel, campos, groupVotes } = useContext(UserContext);
     let approve; 
     let reject;
     let blank;
-    let approvePorc,rejectPorc,blankPorc
+    let totalVotes;
+    let approvePorc,rejectPorc,blankPorc;
+
+    const [graphGroup, setGraphGroup] = useState(false);
+    const [graphData, setGraphData] = useState(false);
+
 
     console.log("optionsLabel en el chart:", optionsLabel);
+    console.log("campos abiertos en el chart:", campos);
+
+    const labels = Object.keys(groupVotes);
+    const results = Object.values(groupVotes);
+
+
+
+    console.log(labels); 
+    console.log(results);  
     
     const data = {
       labels: [
@@ -40,15 +54,36 @@ const Graph = () => {
       ],
     };
 
+    const dataGroup = {
+      labels: Object.keys(groupVotes),
+      datasets: [
+        {
+          label: "Votos",
+          data: Object.values(groupVotes),
+          backgroundColor: ["#34863f"],
+        },
+      ],
+    };
+
+    useEffect(() => {
+      if (results.length > 0) {
+        setGraphGroup(true);
+      } 
+      else if (data.length > 0) {
+        setGraphData(true);
+      } 
+      else {
+        setGraphGroup(false);
+        setGraphData(false);
+      }
+    }, [groupVotes]);
 
   useEffect(()=>{
-
-
     const results = () => {
 
-      approve = approvalVotes;
-      reject = rejectVotes;
-      blank = blankVotes;
+      // approve = approvalVotes;
+      // reject = rejectVotes;
+      // blank = blankVotes;
 
       const totalVotes = approvalVotes + rejectVotes + blankVotes;
 
@@ -64,13 +99,30 @@ const Graph = () => {
 
       console.log("approvalVotes + rejectVotes + blankVotes",approvalVotes, rejectVotes, blankVotes);
 
-      console.log("votos absolutos",approve,reject,blank);
+      // console.log("votos absolutos",approve,reject,blank);
 
       console.log("porcentajes",approvePorc,rejectPorc,blankPorc);
 
     }
     results();
   },[approvalVotes,rejectVotes,blankVotes])
+
+
+  const porcentajes = useMemo(() => {
+    
+      console.log("groupVotes",groupVotes);
+      const total = Object.values(groupVotes).reduce((accumulator, currentValue) => accumulator + currentValue, 0);
+
+        return total > 0
+        ? Object.fromEntries(
+            Object.entries(groupVotes).map(([clave, valor]) => [
+              clave,
+              ((valor / total) * 100)
+            ])
+          )
+        : {};
+
+  },[groupVotes])
     
 
   const options = {
@@ -82,25 +134,53 @@ const Graph = () => {
   };
 
   return (
-    <>
-    <div className="bg-white p-4 rounded shadow-md" >
-      <h2 className="text-xl font-semibold mb-4 text-teal-600">Resultados Votación</h2>
-      <div className="w-75 h-50">
-        <Bar data={data} options={options} />
-      </div>
-    </div>
-    <div className="italic text-blue-600">
-       {optionsLabel.option1 || "Aprueban:"} {approvalVotes} <br />
-        {optionsLabel.option2 || "Rechazan:"} {rejectVotes} <br />
-        {optionsLabel.option3 || "Blanco:"} {blankVotes} <br />
-    </div>
-    <div className="italic text-blue-600 w-75 h-50">
-        Porc. Aprueban: {approvalVotes/(approvalVotes+rejectVotes+blankVotes)*100}% <br />
-        Porc. Rechazan: {rejectVotes/(approvalVotes+rejectVotes+blankVotes)*100}% <br />
-        Blanco:  {blankVotes/(approvalVotes+rejectVotes+rejectVotes)*100}% <br />
-    </div>
-    </>
+    // <div className="bg-white p-4 rounded shadow-md space-y-4">
+    graphGroup ? (
+      <>
+          <div className="bg-white p-4 rounded shadow-md" >
+            <h2 className="text-xl font-semibold mb-4 text-teal-600">Resultados Votación</h2>
+            <div className="w-75 h-50">
+              <Bar data={dataGroup} options={options} />
+            </div>
+            <div className="italic text-blue-600">
+             {labels.map((label) => (
+              <p key={label}>
+                {label}: {porcentajes[label]?.toFixed(2)}%
+              </p>
+            ))}
+            </div>
+          </div>
+              
+      </>
+      ) : graphData ? (
+        <>
+          <div className="bg-white p-4 rounded shadow-md" >
+            <h2 className="text-xl font-semibold mb-4 text-teal-600">Resultados Votación</h2>
+            <div className="w-75 h-50">
+              <Bar data={data} options={options} />
+            </div>
+          </div>
+          <div className="italic text-blue-600">
+            {optionsLabel.option1 || "Aprueban:"} {approvalVotes} <br />
+            {optionsLabel.option2 || "Rechazan:"} {rejectVotes} <br />
+            {optionsLabel.option3 || "Blanco:"} {blankVotes} <br />
+          </div>
+          <div className="italic text-blue-600 w-75 h-50">
+              Porc. Aprueban: {approvalVotes/(approvalVotes+rejectVotes+blankVotes)*100}% <br />
+              Porc. Rechazan: {rejectVotes/(approvalVotes+rejectVotes+blankVotes)*100}% <br />
+              Blanco:  {blankVotes/(approvalVotes+rejectVotes+rejectVotes)*100}% <br />
+          </div>
+
+        </>
+      )
+      : (
+        <div className="bg-white p-4 rounded shadow-md" >
+          <h2 className="text-xl font-semibold mb-4 text-teal-600">Resultados Votación</h2>
+          <p className="text-gray-500">No hay datos de votación disponibles.</p>
+        </div>
+      )
   );
+    
 };
 
 export default Graph;

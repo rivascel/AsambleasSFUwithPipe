@@ -17,7 +17,7 @@ const AskToParticipate = () => {
   const [displayTime, setDisplayTime] = useState("00:00");
   const { email, setCheckApprove, ownerData } = useContext(UserContext);
 
-console.log("🔎 Ask.jsx ownerData:", ownerData);
+// console.log("🔎 Ask.jsx ownerData:", ownerData);
 
   const [requestStatus, setRequestStatus] = useState(() => {
     const saved = localStorage.getItem("requestStatus");

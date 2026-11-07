@@ -43,7 +43,7 @@ const DashBoardOwner = () => {
   const [error, setError] = useState(null);
   // const [quorum, setQuorum] = useState(null);
   // const [votesData, setVotesData] = useState({}); // lista de todos los propietarios
-  const { email, login, logout, role, setQuorum, setApprovalVotes, setRejectVotes, setBlankVotes, ownerData, setOptionsLabel } = useContext(UserContext);
+  const { email, login, logout, role, setQuorum, setApprovalVotes, setRejectVotes, setBlankVotes, setGroupVotes, ownerData, setOptionsLabel } = useContext(UserContext);
   const ownerDataRef = useRef(ownerData);
   const sesionRef = useRef(null);
   const socketRef = useRef(null);
@@ -161,6 +161,7 @@ const DashBoardOwner = () => {
         setApprovalVotes(data.approval);
         setRejectVotes(data.reject);
         setBlankVotes(data.blank);
+        setGroupVotes(data.groupVotes); 
 
     };
 
@@ -174,8 +175,6 @@ const DashBoardOwner = () => {
 
         console.log("rotulos de opciones actualizados:", data.option1, data.option2, data.option3);
     };
-
-
 
     socketRef.current.on('send-votes', handleUpdateVotes);
     socketRef.current.on('send-options', handleUpdateLabels);
@@ -267,7 +266,6 @@ const DashBoardOwner = () => {
   //     }); 
   };
 
-  
   // if (error) return <p>{error}</p>;
 
 

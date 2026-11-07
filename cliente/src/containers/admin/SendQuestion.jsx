@@ -7,32 +7,54 @@ import { getSocket  } from "../../hooks/socket";
 
 
 const SendQuestions = () => {
-  const { apiUrl } = useContext(AppContext);
-  const socketRef = useRef(null);
+const { apiUrl } = useContext(AppContext);
+const socketRef = useRef(null);
 
-      useEffect(() => {
-        const socket = getSocket(apiUrl);
-        socketRef.current = socket;
-        
-        // socketRef.current.on("connect", () => {
-        //   console.log("🟢 Conectado:", socketRef.current.id);
-        // });
-      },[]);
+useEffect(() => {
+  const socket = getSocket(apiUrl);
+  socketRef.current = socket;
+  
+  // socketRef.current.on("connect", () => {
+  //   console.log("🟢 Conectado:", socketRef.current.id);
+  // });
+},[]);
 
-
+// const group = useRef(null);
   // const [decisionText, setDecisionText] = useState("Propuesta de ejemplo para ser votada.");
-  const { decisionText, setDecisionText } = useContext(UserContext);
-  const [option1, setOption1] = useState("Opción 1");
-  const [option2, setOption2] = useState("Opción 2");
-  const [option3, setOption3] = useState("Opción 3");
+  const { decisionText, setDecisionText, setGroupId, groupId } = useContext(UserContext);
+  const [campos, setCampos] = useState(['']) ;
+  const [option1, setOption1] = useState("");
+  const [option2, setOption2] = useState("");
+  const [option3, setOption3] = useState("");
+
 
   const SendtoUsers = (e) => {
     socketRef.current.emit('send-decision', decisionText);
   };
+  //aprueba, rechaza, blanco
+  const SendValuesToUsers = (e) => {
+    socketRef.current.emit('send-values',  { option1, option2, option3 } );
+  };
 
   const SendOptionsToUsers = (e) => {
-    socketRef.current.emit('send-options', { option1, option2, option3 });
+    socketRef.current.emit('send-options',   campos, groupId  );
   };
+
+  const agregarCampo = () => {
+    setCampos([...campos, '']);
+  };
+
+  const manejarCambioCampo = (index, event) => {
+    const nuevosCampos = [...campos];
+    nuevosCampos[index] = event.target.value;
+    setCampos(nuevosCampos);
+  };
+
+  const eliminarCampo = (index) => {
+    const nuevosCampos = campos.filter((_, i) => i !== index);
+    setCampos(nuevosCampos);
+  }
+
 
   return (
     <div className="bg-white p-4 rounded shadow-md space-y-4">
@@ -75,9 +97,42 @@ const SendQuestions = () => {
         />
         <br />
 
-        
+        <div>
+      <h3>Lista de Opciones</h3>
+      <input
+        type="text"
+        value={groupId}
+        onChange={(e) => setGroupId(e.target.value)}
+        placeholder="Ingrese identificador"
+      />
+      {campos.map((campo, index) => (
+        <div key={index} style={{ marginBottom: '8px' }}>
+          <input
+            type="text"
+            value={campo}
+            onChange={(e) => manejarCambioCampo(index, e)}
+            placeholder={`Opción ${index + 1}`}
+          />
+          <button type="button" onClick={() => eliminarCampo(index)} style={{ marginLeft: '8px' }}>
+            Eliminar
+          </button>
+        </div>
+      ))}
+
+        <button type="button" onClick={agregarCampo} style={{ marginTop: '10px' }}>
+        + Agregar Campo
+          </button>
+        </div>
+
+       
         <button
-            onClick={SendOptionsToUsers}
+            onClick={ () => {
+              if (option1 || option2 || option3) {
+                SendValuesToUsers();
+              } else {
+                SendOptionsToUsers();
+              }
+            } }
             className="bg-blue-600 text-black px-6 py-2 rounded hover:bg-blue-700"
           >
             Envie Opciones a los asistentes

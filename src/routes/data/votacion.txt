@@ -1,8 +1,5 @@
-{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"Propuesta de ejemplo para ser votada.","valor":2}
-{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"","valor":2}
-{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"","valor":0}
-{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"","valor":1}
-{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"","valor":0}
-{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"Propuesta de ejemplo para ser votada.4","valor":2}
-{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"Propuesta de ejemplo para ser votada.4","valor":0}
-{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"","valor":0}
+{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"sss","valor":1,"groupId":"AAA"}
+{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"xxx","valor":1,"groupId":"AAA"}
+{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"ttt","valor":1,"groupId":"AAA"}
+
+{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"ww","valor":4,"groupId":"AAA"}

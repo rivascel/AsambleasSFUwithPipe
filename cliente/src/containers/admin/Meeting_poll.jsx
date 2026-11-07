@@ -7,8 +7,6 @@ import { getSocket  } from "../../hooks/socket";
 // import { Button } from "../../components/components/Button";
 import  Button  from "../../components/components/Button";
 
-
-
 const PollingManage = () => {
     const { apiUrl } = useContext(AppContext);
     const socketRef = useRef(null);
@@ -19,7 +17,7 @@ const PollingManage = () => {
 
     const [finalMinute, setFinalMinute] = useState(0);
     const [displayTime, setDisplayTime] = useState("00:00");
-    const { decisionText, setApprovalVotes, setRejectVotes, setBlankVotes, setVotingEnabled, ownerData, email } = useContext(UserContext);
+    const { decisionText, setApprovalVotes, setRejectVotes, setBlankVotes, groupId, setGroupVotes, setVotingEnabled, ownerData, email } = useContext(UserContext);
     // const [decisionText, setDecisionText] = useState("");
 
     useEffect(() => {
@@ -179,13 +177,12 @@ const PollingManage = () => {
         
                 const filteredVotes = votesData.filter(vote => decisionText === vote.proposicion.trim());
                 console.log("filteredVotes:", filteredVotes);
-        
+                
                 const contarVotosApprobal = (votos) => {
 
                     return votos.reduce((total, voto) => {
                         const valor = parseInt(voto.valor);
                         const quant = parseInt(voto.qty);
-
 
                         if (valor === 1) {
                             // if (!isNaN(quant)){
@@ -243,16 +240,79 @@ const PollingManage = () => {
                         
                     }, 0);
                 };
+
+                const filteredVotesByGroup = votesData.filter(vote => groupId === vote.groupId.trim());
+                console.log("filteredVotesByGroup:", filteredVotesByGroup);
+
+                // const countByGroup = (votos) => {
+                //     return votos.reduce((total, voto) => {
+                //         const proposicion = voto.proposicion.trim();
+                //         const quant = parseInt(voto.qty);
+
+                //         if (!total[proposicion]) {
+                //             total[proposicion] = 0;
+                //         }
+
+                //         if (voto.participacion === null || voto.participacion === undefined ){
+                //             total[proposicion].valor += (isNaN(quant) ? 0 : quant ) 
+                                
+                //         } else if (voto.participacion === 0) {
+                //             total[proposicion].valor += 1;
+                //         } else {
+                //             total[proposicion].valor += (1 * voto.participacion);
+                //         } 
+
+                //         total[proposicion].valor += 1;
+ 
+                //     }, {});
+
+                    
+                // };
+
+                const countByGroup = (votos) => {
+
+                    return votos.reduce((total, voto) => {
+
+                        const proposicion = voto.proposicion.trim();
+
+                         if (!total[proposicion]) {
+                           total[proposicion] = 0;
+                        }
+
+                        if (voto.participacion === null || voto.participacion === undefined ){
+                            total[proposicion] += (isNaN(quant) ? 0 : quant ) 
+                                
+                        } else if (voto.participacion === 0) {
+                            total[proposicion] += 1;
+                        } else {
+                            total[proposicion] += (1 * voto.participacion);
+                        } 
+
+                        // total[proposicion] += 1;
+                        return total;
+
+                    }, {});
+                };
+
+                
+                console.log("Resultados:", countByGroup(filteredVotesByGroup));
+                
+
         
                 setApprovalVotes(contarVotosApprobal(filteredVotes));
                 setRejectVotes(contarVotosReject(filteredVotes));
                 setBlankVotes(contarVotosBlank(filteredVotes));
+
+                setGroupVotes(countByGroup(filteredVotesByGroup));
         
                 socketRef.current.emit('send-votes',{
                     approval: contarVotosApprobal(filteredVotes),
                     reject: contarVotosReject(filteredVotes),
                     blank: contarVotosBlank(filteredVotes),
+                    groupVotes: countByGroup(filteredVotesByGroup)
                 });
+
+                
         
             } catch (error) {
             console.error("Error al contar los votos:", error);

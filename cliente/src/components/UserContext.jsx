@@ -30,7 +30,12 @@ const UserProvider = ({ children }) => {
   const [approvalVotes, setApprovalVotes] = useState(0);
   const [rejectVotes, setRejectVotes] = useState(0);
   const [blankVotes, setBlankVotes] = useState(0);    
-  const [optionsLabel, setOptionsLabel] = useState("");
+
+  const [groupVotes, setGroupVotes] = useState({}); // NUEVO: Para almacenar los votos por grupo
+  const [optionsLabel, setOptionsLabel] = useState(['']);
+  const [campos, setCampos] = useState([]); // NUEVO: Para almacenar las opciones de votación
+  const [groupId, setGroupId] = useState(""); // NUEVO: Para almacenar el identificador del grupo
+
   
   const [checkApprove, setCheckApprove] = useState(null);
   const [isAuthenticatedAdmin, setIsAuthenticatedAdmin] = useState(false);
@@ -183,6 +188,12 @@ const UserProvider = ({ children }) => {
         quorumPercentage,
         optionsLabel,
         setOptionsLabel,
+        campos,
+        setCampos,
+        groupId,
+        setGroupId,
+        groupVotes, 
+        setGroupVotes,
         setQuorumPercentage
         
        }}>
