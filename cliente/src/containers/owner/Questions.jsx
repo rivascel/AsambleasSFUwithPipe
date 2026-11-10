@@ -40,25 +40,20 @@ const Questions = () => {
         setDecisionText(text);
       });
 
-      socketRef.current.on('receive-values', options => {
+      socketRef.current.on('receive-values', ({ options }) => {
         console.log("Valores recibidos:", options);
         // Aquí puedes manejar los valores recibidos según tus necesidades
+        setOptionsLabel(options);
         setVoteOptions(true);
-
-        setOptionsLabel({
-          option1: options.option1,
-          option2: options.option2,
-          option3: options.option3
-        });
+        setVoteOpenValues(false);
       });
 
-      socketRef.current.on('receive-options', ( { options, groupId }) => {
-        console.log("Opciones recibidas abiertas:", { options, groupId });
+      socketRef.current.on('receive-options', ( { campos, groupId }) => {
+        console.log("Opciones recibidas abiertas:", { campos, groupId });
         // Aquí puedes manejar las opciones recibidas según tus necesidades
-        console.log("Opciones recibidas abiertas sin grupo:", options);
         setGroupId(groupId); // Asigna el valor del identificador al input
         setVoteOpenValues(true);
-        setCampos(options);
+        setCampos(campos);
 
       });
 

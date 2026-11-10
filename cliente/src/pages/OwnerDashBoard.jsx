@@ -165,23 +165,11 @@ const DashBoardOwner = () => {
 
     };
 
-    const handleUpdateLabels= (data) => {
-
-        setOptionsLabel({
-          option1: data.option1,
-          option2: data.option2,
-          option3: data.option3
-        });
-
-        console.log("rotulos de opciones actualizados:", data.option1, data.option2, data.option3);
-    };
-
     socketRef.current.on('send-votes', handleUpdateVotes);
-    socketRef.current.on('send-options', handleUpdateLabels);
 
     return () => {
         socketRef.current.off('send-votes', handleUpdateVotes);
-        socketRef.current.off('send-options', handleUpdateLabels);
+        // socketRef.current.off('send-options', handleUpdateLabels);
     };
 }, []);
 

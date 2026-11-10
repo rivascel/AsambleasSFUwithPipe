@@ -21,24 +21,35 @@ useEffect(() => {
 
 // const group = useRef(null);
   // const [decisionText, setDecisionText] = useState("Propuesta de ejemplo para ser votada.");
-  const { decisionText, setDecisionText, setGroupId, groupId } = useContext(UserContext);
-  const [campos, setCampos] = useState(['']) ;
-  const [option1, setOption1] = useState("");
-  const [option2, setOption2] = useState("");
-  const [option3, setOption3] = useState("");
-
+  const { decisionText, setDecisionText, setGroupId, groupId, setOptionsLabel, optionsLabel, } = useContext(UserContext);
+  const [campos, setCampos] = useState(['']);
+  const [votingType, setVotingType] = useState('');
 
   const SendtoUsers = (e) => {
     socketRef.current.emit('send-decision', decisionText);
+    SendValuesToUsers();
   };
   //aprueba, rechaza, blanco
-  const SendValuesToUsers = (e) => {
-    socketRef.current.emit('send-values',  { option1, option2, option3 } );
+  const SendValuesToUsers =  (e) => {
+
+    const options = {
+      option1: "Aprueba",
+      option2: "Rechaza",
+      option3: "Blanco"
+    };
+    setOptionsLabel(options);
+
+    socketRef.current.emit('send-values',  options );
+    setOptionsLabel({});
+    setVotingType('');
   };
 
   const SendOptionsToUsers = (e) => {
-    socketRef.current.emit('send-options',   campos, groupId  );
+    socketRef.current.emit('send-options',   { campos, groupId }  );
+    setVotingType("");
   };
+
+  
 
   const agregarCampo = () => {
     setCampos([...campos, '']);
@@ -74,28 +85,7 @@ useEffect(() => {
             Envie Pregunta a los asistentes
         </button>
 
-        <br />
-        <input 
-          value={option1} 
-          onChange={(e) => setOption1(e.target.value)} 
-          className="border rounded p-2"
-          placeholder="Opción 1"
-        />
-        <br />
-        <input 
-          value={option2} 
-          onChange={(e) => setOption2(e.target.value)} 
-          className="border rounded p-2"
-          placeholder="Opción 2"
-        />
-        <br />
-        <input 
-          value={option3} 
-          onChange={(e) => setOption3(e.target.value)} 
-          className="border rounded p-2"
-          placeholder="Opción 3"
-        />
-        <br />
+
 
         <div>
       <h3>Lista de Opciones</h3>
@@ -127,11 +117,16 @@ useEffect(() => {
        
         <button
             onClick={ () => {
-              if (option1 || option2 || option3) {
-                SendValuesToUsers();
-              } else {
+              // if (votingType === 'fixed') {
+              //   SendValuesToUsers();
+              // } else if (votingType === 'open') {
+              //   SendOptionsToUsers();
+              // }
+
+              
                 SendOptionsToUsers();
-              }
+              
+
             } }
             className="bg-blue-600 text-black px-6 py-2 rounded hover:bg-blue-700"
           >

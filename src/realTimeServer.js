@@ -176,12 +176,14 @@ export default (httpServer) => {
                 socket.broadcast.emit("receive-decision", text );
             });
 
-            socket.on("send-options", (campos, groupId) => {
-                socket.broadcast.emit("receive-options", { options: campos, groupId: groupId });
+            socket.on("send-options", (data) => {
+                console.log("Valores recibidos para opciones abiertas en servidor:", data);
+                socket.broadcast.emit("receive-options", data);
             });
 
-            socket.on("send-values", (options) => {
-                socket.broadcast.emit("receive-values", options);
+            socket.on("send-values", ( options ) => {
+                console.log("Valores recibidos en servidor:", { options });
+                socket.broadcast.emit("receive-values", { options });
             });
 
             socket.on("inicioVotacion", text => {
