@@ -177,12 +177,12 @@ export default (httpServer) => {
             });
 
             socket.on("send-options", (data) => {
-                console.log("Valores recibidos para opciones abiertas en servidor:", data);
+                // console.log("Valores recibidos para opciones abiertas en servidor:", data);
                 socket.broadcast.emit("receive-options", data);
             });
 
             socket.on("send-values", ( options ) => {
-                console.log("Valores recibidos en servidor:", { options });
+                // console.log("Valores recibidos en servidor:", { options });
                 socket.broadcast.emit("receive-values", { options });
             });
 

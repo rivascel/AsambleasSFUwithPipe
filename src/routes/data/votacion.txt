@@ -15,3 +15,7 @@
 {"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"ggge","valor":2,"groupId":"AAA"}
 {"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"Propuesta de ejemplo para ser votada.4448","valor":0}
 {"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"qqq","valor":1,"groupId":"AAA"}
+{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"Propuesta de ejemplo para ser votada.","valor":2}
+{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"TRTR","valor":2,"groupId":"AAA"}
+{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"Propuesta de ejemplo para ser votada.1","valor":1}
+{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"www","valor":1,"groupId":"AAA"}
