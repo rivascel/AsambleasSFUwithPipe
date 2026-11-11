@@ -162,7 +162,6 @@ const DashBoardOwner = () => {
         setRejectVotes(data.reject);
         setBlankVotes(data.blank);
         setGroupVotes(data.groupVotes); 
-
     };
 
     socketRef.current.on('send-votes', handleUpdateVotes);

@@ -21,20 +21,20 @@ const Graph = () => {
     let approve; 
     let reject;
     let blank;
-    let totalVotes;
+    // let totalVotes;
     let approvePorc,rejectPorc,blankPorc;
 
     const [graphGroup, setGraphGroup] = useState(false);
     const [graphData, setGraphData] = useState(false);
 
+    const totalVotes = approvalVotes + rejectVotes + blankVotes;
 
-    console.log("optionsLabel en el chart:", optionsLabel);
+
+    console.log("opciones fijas en el chart:", optionsLabel);
     console.log("campos abiertos en el chart:", campos);
 
     const labels = Object.keys(groupVotes);
     const results = Object.values(groupVotes);
-
-
 
     console.log(labels); 
     console.log(results);  
@@ -66,24 +66,26 @@ const Graph = () => {
     };
 
     useEffect(() => {
-      if (results.length > 0) {
+      const hasResultsData = results.length > 0;
+      const hasTotalVotes = (approvalVotes + rejectVotes + blankVotes) > 0;
+
+      if (hasResultsData) {
         setGraphGroup(true);
+        setGraphData(false);
       } 
-      else if (data.length > 0) {
+      else if (hasTotalVotes) {
         setGraphData(true);
+        setGraphGroup(false);
+
       } 
       else {
         setGraphGroup(false);
         setGraphData(false);
       }
-    }, [groupVotes]);
+    }, [groupVotes,optionsLabel]);
 
   useEffect(()=>{
     const results = () => {
-
-      // approve = approvalVotes;
-      // reject = rejectVotes;
-      // blank = blankVotes;
 
       const totalVotes = approvalVotes + rejectVotes + blankVotes;
 
@@ -166,9 +168,9 @@ const Graph = () => {
             {optionsLabel.option3 || "Blanco:"} {blankVotes} <br />
           </div>
           <div className="italic text-blue-600 w-75 h-50">
-              Porc. Aprueban: {approvalVotes/(approvalVotes+rejectVotes+blankVotes)*100}% <br />
-              Porc. Rechazan: {rejectVotes/(approvalVotes+rejectVotes+blankVotes)*100}% <br />
-              Blanco:  {blankVotes/(approvalVotes+rejectVotes+rejectVotes)*100}% <br />
+              Porc. Aprueban: {totalVotes ? approvalVotes/(approvalVotes+rejectVotes+blankVotes)*100 : 0}% <br />
+              Porc. Rechazan: {totalVotes ? rejectVotes/(approvalVotes+rejectVotes+blankVotes)*100 : 0}% <br />
+              Blanco:  {totalVotes ? blankVotes/(approvalVotes+rejectVotes+blankVotes)*100 : 0}% <br />
           </div>
 
         </>

@@ -241,33 +241,8 @@ const PollingManage = () => {
                     }, 0);
                 };
 
-                const filteredVotesByGroup = votesData.filter(vote => groupId === vote.groupId.trim());
+                const filteredVotesByGroup = votesData.filter(vote => groupId === vote.groupId?.trim());
                 console.log("filteredVotesByGroup:", filteredVotesByGroup);
-
-                // const countByGroup = (votos) => {
-                //     return votos.reduce((total, voto) => {
-                //         const proposicion = voto.proposicion.trim();
-                //         const quant = parseInt(voto.qty);
-
-                //         if (!total[proposicion]) {
-                //             total[proposicion] = 0;
-                //         }
-
-                //         if (voto.participacion === null || voto.participacion === undefined ){
-                //             total[proposicion].valor += (isNaN(quant) ? 0 : quant ) 
-                                
-                //         } else if (voto.participacion === 0) {
-                //             total[proposicion].valor += 1;
-                //         } else {
-                //             total[proposicion].valor += (1 * voto.participacion);
-                //         } 
-
-                //         total[proposicion].valor += 1;
- 
-                //     }, {});
-
-                    
-                // };
 
                 const countByGroup = (votos) => {
 
@@ -315,8 +290,8 @@ const PollingManage = () => {
                 
         
             } catch (error) {
-            console.error("Error al contar los votos:", error);
-            return null;
+                console.error("Error al contar los votos:", error);
+                return null;
             };
     };
 
