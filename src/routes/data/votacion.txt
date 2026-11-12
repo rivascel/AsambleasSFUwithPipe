@@ -1,0 +1,5 @@
+{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"prop1","valor":1}
+{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"dd","valor":2,"groupId":"AAA"}
+{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"pro2","valor":2}
+{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"fff","valor":1,"groupId":"AAA"}
+{"interior":"14","apartamento":"101","correo":"rivascel@gmail.com","proposicion":"prop23","valor":2}

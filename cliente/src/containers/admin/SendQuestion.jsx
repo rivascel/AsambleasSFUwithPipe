@@ -23,7 +23,14 @@ useEffect(() => {
   // const [decisionText, setDecisionText] = useState("Propuesta de ejemplo para ser votada.");
   const { decisionText, setDecisionText, setGroupId, groupId, setOptionsLabel, optionsLabel, } = useContext(UserContext);
   const [campos, setCampos] = useState(['']);
-  const [votingType, setVotingType] = useState('');
+
+  const deleteVoting = () => {
+    socketRef.current.emit('delete-voting');
+    setDecisionText("Propuesta de ejemplo para ser votada.");
+    setGroupId("");
+    setOptionsLabel({});
+    setCampos(['']);
+  };
 
   const SendtoUsers = (e) => {
     socketRef.current.emit('send-decision', decisionText);
@@ -41,12 +48,10 @@ useEffect(() => {
 
     socketRef.current.emit('send-values',  options );
     setOptionsLabel({});
-    setVotingType('');
   };
 
   const SendOptionsToUsers = (e) => {
     socketRef.current.emit('send-options',   { campos, groupId }  );
-    setVotingType("");
   };
 
   
@@ -85,6 +90,13 @@ useEffect(() => {
             Envie Pregunta a los asistentes
         </button>
 
+        <button
+            onClick={deleteVoting}
+            className="bg-blue-600 text-black px-6 py-2 rounded hover:bg-blue-700"
+          >
+            Reiniciar Votación
+        </button>
+
 
 
         <div>
@@ -117,16 +129,7 @@ useEffect(() => {
        
         <button
             onClick={ () => {
-              // if (votingType === 'fixed') {
-              //   SendValuesToUsers();
-              // } else if (votingType === 'open') {
-              //   SendOptionsToUsers();
-              // }
-
-              
                 SendOptionsToUsers();
-              
-
             } }
             className="bg-blue-600 text-black px-6 py-2 rounded hover:bg-blue-700"
           >
